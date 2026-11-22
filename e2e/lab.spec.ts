@@ -85,3 +85,72 @@ test('屏幕檢視、全部級次與分頁可操作', async ({ page }) => {
   await expect(page.getByRole('button', { name: '上一頁' })).toBeEnabled()
   await expect(page.getByText(/第 10–18 筆/)).toBeVisible()
 })
+
+test('狹縫示意圖跟隨三種模式、保留寬距比例並放大極窄狹縫', async ({ page }) => {
+  await page.goto('./')
+  const diagram = page.getByRole('region', { name: '即時狹縫示意圖' })
+  const overview = diagram.locator('.slit-overview')
+  const openings = overview.locator('.slit-opening')
+  const widthMarker = overview.locator('.slit-width-marker')
+  const pitchMarker = overview.locator('.slit-pitch-marker')
+  await expect(diagram).toBeVisible()
+  const controlsHeading = await page.getByRole('heading', { name: '實驗參數' }).boundingBox()
+  const diagramHeading = await diagram.getByRole('heading').boundingBox()
+  const chartHeading = await page.getByRole('heading', { name: '遠場強度分布' }).boundingBox()
+  expect(controlsHeading!.y).toBeLessThan(diagramHeading!.y)
+  expect(diagramHeading!.y).toBeLessThan(chartHeading!.y)
+  await expect(openings).toHaveCount(2)
+  await expect(diagram.getByText('N = 2')).toBeVisible()
+  await expect(widthMarker).toHaveText('a = 40 μm')
+  await expect(pitchMarker).toHaveText('d = 160 μm')
+
+  await page.getByRole('button', { name: '單狹縫' }).click()
+  await expect(openings).toHaveCount(1)
+  await expect(diagram.getByText('N = 1')).toBeVisible()
+  await expect(pitchMarker).toHaveCount(0)
+  const initialWidth = (await openings.first().boundingBox())!.width
+  await page.getByRole('spinbutton', { name: /狹縫寬度/ }).fill('80')
+  await expect(widthMarker).toHaveText('a = 80 μm')
+  expect((await openings.first().boundingBox())!.width).toBeCloseTo(2 * initialWidth, 1)
+
+  await page.getByRole('button', { name: 'N 縫光柵' }).click()
+  await page.getByRole('spinbutton', { name: /狹縫寬度/ }).fill('20')
+  await page.getByRole('spinbutton', { name: /狹縫間距/ }).fill('100')
+  await page.getByRole('spinbutton', { name: /狹縫數量/ }).fill('7')
+  await expect(openings).toHaveCount(7)
+  await expect(diagram.getByText('N = 7')).toBeVisible()
+  await expect(widthMarker).toHaveText('a = 20 μm')
+  await expect(pitchMarker).toHaveText('d = 100 μm')
+
+  const shape = await openings.evaluateAll((slits) => slits.map((slit) => {
+    const element = slit as HTMLElement
+    const { x, width } = element.getBoundingClientRect()
+    return { center: x + width / 2, width }
+  }))
+  for (let i = 1; i < shape.length; i++) {
+    expect(shape[i].width / (shape[i].center - shape[i - 1].center)).toBeCloseTo(0.2, 3)
+  }
+  const widthRule = (await widthMarker.locator('.slit-dimension-rule').boundingBox())!
+  expect(widthRule.x).toBeCloseTo(shape[3].center - shape[3].width / 2, 1)
+  expect(widthRule.width).toBeCloseTo(shape[3].width, 1)
+  const pitchRule = (await pitchMarker.locator('.slit-dimension-rule').boundingBox())!
+  expect(pitchRule.x).toBeCloseTo(shape[3].center, 1)
+  expect(pitchRule.width).toBeCloseTo(shape[4].center - shape[3].center, 1)
+
+  await page.getByRole('spinbutton', { name: /狹縫寬度/ }).fill('0.2')
+  await page.getByRole('slider', { name: '狹縫間距滑桿' }).press('End')
+  await page.getByRole('slider', { name: '狹縫數量滑桿' }).press('End')
+  await expect(openings).toHaveCount(24)
+  await expect(widthMarker).toHaveText('a = 0.2 μm')
+  await expect(pitchMarker).toHaveText('d = 400 μm')
+  const magnified = diagram.locator('.slit-detail')
+  await expect(magnified.getByText('單縫局部放大')).toBeVisible()
+  expect((await magnified.locator('.slit-opening').boundingBox())!.width).toBeGreaterThan(16)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
+
+  await page.getByRole('link', { name: '形狀 → 遠場繞射' }).click()
+  await expect(page.getByRole('img', { name: '二維遠場繞射強度圖' })).toBeVisible()
+  await expect(diagram).toBeHidden()
+  await page.getByRole('link', { name: '模擬實驗', exact: true }).click()
+  await expect(openings).toHaveCount(24)
+})

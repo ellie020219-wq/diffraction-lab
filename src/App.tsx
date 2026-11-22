@@ -3,6 +3,7 @@ import { Aperture, BookOpen, Columns2, Grid2X2, Waves } from 'lucide-react'
 import { Controls } from './Controls'
 import { PatternChart, screenScales, type ScreenScale } from './PatternChart'
 import { Results } from './Results'
+import { SlitDiagram } from './SlitDiagram'
 import { farFieldRatio, localMaxima, samplePattern, sinFromPosition, theory } from './optics'
 import { automaticHalfWidth, defaults, greenGrating, toModel, type Mode, type Settings } from './settings'
 
@@ -94,6 +95,7 @@ export default function App() {
               onReset={() => { changeSettings(defaults); setScale('auto') }}
               onGratingExample={() => { changeSettings(greenGrating); setScale('auto') }} />
             <div className="experiment-output">
+              <SlitDiagram slitWidth={optics.slitWidth} slitPitch={optics.slitPitch} slitCount={optics.slitCount} />
               <PatternChart model={optics} wavelengthNm={settings.wavelengthNm} samples={samples}
                 halfWidth={halfWidth} theory={visibleTheory} maxima={maxima} scale={scale} onScaleChange={setScale} />
               <Results key={mode} single={mode === 'single'} visible={visibleTheory} all={allTheory} maxima={maxima} />
