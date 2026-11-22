@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Aperture as ApertureIcon, CircleHelp, Focus, Info, Lock, Unlock } from 'lucide-react'
+import { lazy, Suspense, useState } from 'react'
+import { Aperture as ApertureIcon, CircleHelp, Focus, GitCompareArrows, Info, Lock, Unlock } from 'lucide-react'
 import { apertureKey, samplingCheck } from './apertures'
 import { AperturePlot, FarFieldPlot, formatMm } from './FarFieldCanvas'
 import { defaultSettings, FarFieldControls, ScaleSelector, ShapeSelector, toAperture, toLight } from './FarFieldControls'
@@ -8,9 +8,11 @@ import { screenLimits, type IntensityScale } from './intensity'
 import { lessons } from './shapeLessons'
 import { useFarField, useFarFieldEngine } from './useFarField'
 
+const PropagationPanel = lazy(() => import('../fresnel/PropagationPanel'))
+
 export default function FarFieldPage() {
   const [settings, setSettings] = useState(defaultSettings)
-  const [tab, setTab] = useState<'lab' | 'quiz'>('lab')
+  const [tab, setTab] = useState<'lab' | 'quiz' | 'comparison'>('lab')
   const [quizStarted, setQuizStarted] = useState(false)
   const [scale, setScale] = useState<IntensityScale>('log')
   const [fixed, setFixed] = useState<number | null>(null)
@@ -35,6 +37,9 @@ export default function FarFieldPage() {
       <button type="button" aria-pressed={tab === 'quiz'} onClick={() => { setQuizStarted(true); setTab('quiz') }}>
         <CircleHelp size={17} aria-hidden="true" /> 猜猜看
       </button>
+      <button type="button" aria-pressed={tab === 'comparison'} onClick={() => setTab('comparison')}>
+        <GitCompareArrows size={17} aria-hidden="true" /> 近遠場比較
+      </button>
     </div>
     <section aria-label="二維繞射模擬" hidden={tab !== 'lab'}>
       <ShapeSelector shape={settings.shape} change={(shape) => setSettings({ ...settings, shape })} />
@@ -47,7 +52,7 @@ export default function FarFieldPage() {
               </div>
               <span className="ff-angle">{settings.angle}°</span>
             </div>
-            <AperturePlot aperture={aperture} label={lesson.title + '的二值透光孔徑'} />
+            <AperturePlot aperture={aperture} label={lesson.title + '的二值透光孔徑'} showScale />
             <div className="ff-aperture-legend">
               <span><i /> 透光區</span>
               <span><i /> 遮光區</span>
@@ -102,6 +107,9 @@ export default function FarFieldPage() {
         </div>
       </div>
     </section>
+    {tab === 'comparison' && <Suspense fallback={<p role="status">正在載入近遠場比較…</p>}>
+      <PropagationPanel settings={settings} selectShape={(shape) => setSettings({ ...settings, shape })} />
+    </Suspense>}
     {quizStarted && <div hidden={tab !== 'quiz'}><FarFieldQuiz engine={engine} error={error} /></div>}
   </main>
 }

@@ -52,4 +52,26 @@ export const lessons: Record<Shape, Lesson> = {
     formula: 'I = I單圓孔 · cos²(πsf∥)，Δx∥ = λz / s',
     activity: '保持直徑與屏幕範圍，增大中心距，觀察同一個圓形包絡內的條紋變密。',
   },
+  rectangle: {
+    title: '長方形', size: '長邊',
+    principle: '長方形的兩軸有不同孔徑寬度，遠場為兩個寬度不同的 sinc² 分布相乘。',
+    observation: '名義長短邊比為 2∶1。孔徑短邊方向的遠場亮斑較寬。',
+    formula: '第一零點 |x| = λz / a、|y| = λz / b（未旋轉）',
+    activity: '將孔徑轉 90°，觀察較寬的亮紋方向隨孔徑旋轉。',
+  },
+  ellipse: {
+    title: '橢圓形', size: '長軸直徑',
+    principle: '橢圓孔是沿一軸縮放的圓孔。傅立葉轉換使遠場在對應方向反向縮放。',
+    observation: '名義長短軸比為 2∶1。中央亮斑及暗環沿孔徑短軸方向拉長。',
+    formula: '兩軸第一暗環半徑 ≈ 1.22 λz / 對應軸直徑',
+    activity: '固定屏幕範圍，從圓孔切換到橢圓形，比較兩個方向的第一暗環。',
+  },
+  cross: {
+    title: '十字形', size: '端到端寬度',
+    principle: '十字孔徑是兩個垂直長方形的聯集，重疊的中心方塊只計一次。',
+    observation: '兩臂的場振幅相加並形成干涉。每臂寬度為端到端尺寸的三分之一。',
+    formula: 'U = U水平臂 + U垂直臂 − U中心重疊區',
+    activity: '旋轉十字孔 45°，比較孔徑方向與遠場亮紋方向。',
+  },
+
 }

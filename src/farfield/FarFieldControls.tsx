@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { Circle, CircleEllipsis, Hexagon, Pill, RotateCcw, SlidersHorizontal, Square, Triangle } from 'lucide-react'
+import { Circle, CircleEllipsis, Hexagon, Minus, MoveHorizontal, Pill, Plus, RotateCcw, SlidersHorizontal, Square, Triangle } from 'lucide-react'
 import { limits, shapes, spacingRatio, type Aperture, type Shape } from './apertures'
 import type { Illumination, IntensityScale } from './intensity'
 import { lessons } from './shapeLessons'
@@ -25,7 +25,7 @@ export function toLight(settings: Settings): Illumination {
   return { wavelength: settings.wavelengthNm * 1e-9, distance: settings.distanceMm * 1e-3 }
 }
 
-const icons = { circle: Circle, square: Square, triangle: Triangle, hexagon: Hexagon, stadium: Pill, 'double-circle': CircleEllipsis }
+const icons = { circle: Circle, square: Square, triangle: Triangle, hexagon: Hexagon, stadium: Pill, 'double-circle': CircleEllipsis, rectangle: Minus, ellipse: MoveHorizontal, cross: Plus }
 
 export function ShapeSelector({ shape, change }: { shape: Shape; change: (shape: Shape) => void }) {
   return <div className="ff-shapes" role="group" aria-label="孔徑形狀">

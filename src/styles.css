@@ -523,7 +523,7 @@ nav .nav-farfield[aria-current="page"] { color: #f1f8ee; background: var(--green
 }
 .ff-shapes {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(9, minmax(0, 1fr));
   grid-auto-rows: 1fr;
   gap: 8px;
   margin-block: 0 16px;
@@ -828,4 +828,101 @@ nav .nav-farfield[aria-current="page"] { color: #f1f8ee; background: var(--green
 @media (max-width: 550px) {
   .slit-barrier { height: 38px; }
   .slit-diagram-legend { column-gap: 8px; font-size: 12px; }
+}
+
+.optical-setup figure { margin: 12px 0 0; }
+.optical-path {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+}
+.optical-path li {
+  position: relative;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f1f7f2;
+  text-align: center;
+  font-size: 14px;
+}
+.optical-direction { position: absolute; left: -19px; top: 12px; color: #507164; }
+.optical-symbol { display: grid; place-items: center; width: 35px; height: 27px; color: #2d6552; }
+.optical-mask {
+  background: linear-gradient(90deg, #203730 40%, #fbd894 40% 58%, #203730 58%);
+  border: 2px solid #203730;
+  border-radius: 4px;
+}
+.optical-screen {
+  border: 2px solid #426a5c;
+  border-radius: 4px;
+  background: radial-gradient(ellipse, #fbd894 0 17%, transparent 18%),
+    repeating-linear-gradient(90deg, #566e64 0 2px, #273e35 2px 7px);
+}
+.optical-value { font: 12px/1.35 var(--mono); color: #2a5447; }
+.optical-setup figcaption { margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+.ff-aperture-scale {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "side mask" "ylabel bottom" ". xlabel";
+  gap: 5px 8px;
+  width: min(100%, 305px);
+  margin: 13px auto 0;
+  color: #c1d3c9;
+  font: 11px var(--mono);
+}
+.ff-aperture .ff-aperture-scale .ff-aperture-plot { grid-area: mask; width: 100%; margin: 0; }
+.ff-aperture-y { grid-area: side; display: flex; flex-direction: column; justify-content: space-between; text-align: end; }
+.ff-aperture-x { grid-area: bottom; display: flex; justify-content: space-between; }
+.ff-aperture-y-unit { grid-area: ylabel; text-align: end; white-space: nowrap; }
+.ff-aperture-x-unit { grid-area: xlabel; text-align: center; }
+
+.propagation-panel { min-width: 0; }
+.propagation-panel .propagation-controls { display: block; }
+.propagation-heading, .propagation-settings, .propagation-playback { display: flex; flex-wrap: wrap; gap: 9px 15px; }
+.propagation-heading { justify-content: space-between; align-items: start; }
+.propagation-heading p, .propagation-settings p, .propagation-hint { font-size: 13px; color: var(--muted); }
+.propagation-readout { display: flex; flex-wrap: wrap; gap: 5px 13px; }
+.propagation-readout > span { padding: 4px 7px; border-radius: 6px; background: var(--green-pale); font-size: 13px; }
+.propagation-readout output { display: inline-block; font: 650 13px var(--mono); }
+.propagation-settings { margin-top: 13px; align-items: center; }
+.propagation-settings .ff-scale { margin-inline-start: auto; }
+.propagation-settings label, .propagation-distance { font-size: 13px; }
+.propagation-settings select, .propagation-distance input {
+  margin-inline: 4px;
+  max-width: 100%;
+  padding: 4px 5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #f5f9f5;
+}
+.propagation-distance input { width: 100px; font: 13px var(--mono); }
+.propagation-playback { align-items: center; margin-top: 12px; }
+.propagation-playback .slider { flex: 1 1 120px; width: auto; margin: 0; }
+.propagation-hint { margin-top: 4px; }
+.propagation-condition { margin: 12px 0; }
+.propagation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
+.propagation-figure-note { color: #c0d2c9; font-size: 13px; min-height: 1.5em; margin-top: 3px; }
+.propagation-figure .ff-probe { min-height: 2.5em; }
+
+@media (max-width: 1050px) { .ff-shapes { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 650px) {
+  .ff-shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .propagation-grid { grid-template-columns: minmax(0, 1fr); gap: 11px; }
+}
+@media (max-width: 550px) {
+  .optical-path { gap: 11px; }
+  .optical-path li { font-size: 12px; }
+  .optical-direction { left: -14px; width: 15px; }
+  .optical-value { font-size: 11px; }
+  .ff-aperture-scale { width: min(100%, 240px); }
+  .propagation-settings .ff-scale { margin-inline-start: 0; }
 }

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { apertureGrid, apertureRadius, limits, shapes, spacingRatio, type Aperture, type Shape } from './apertures'
+import { apertureGrid, apertureRadius, limits, referenceShapes, shapes, spacingRatio, type Aperture, type Shape } from './apertures'
 import { FarFieldFft, type Spectrum } from './fft2'
 import { intensityAt, intensityColor, screenLimits, screenStep } from './intensity'
 
@@ -28,7 +28,7 @@ function localMinimum(values: Float64Array, start: number, end: number) {
 }
 
 beforeAll(() => {
-  for (const shape of shapes) results.set(shape, transformer.calculate({ ...benchmark, shape }, 2048))
+  for (const shape of referenceShapes) results.set(shape, transformer.calculate({ ...benchmark, shape }, 2048))
 })
 
 describe('二維 Fraunhofer FFT', () => {
@@ -46,7 +46,7 @@ describe('二維 Fraunhofer FFT', () => {
     expect(intensityAt(padded, 0, 0)).toBe(1)
   })
 
-  it.each(shapes)('%s 與獨立連續孔徑基準相符，且具有中心對稱性', (shape) => {
+  it.each(referenceShapes)('%s 與獨立連續孔徑基準相符，且具有中心對稱性', (shape) => {
     const spectrum = field(shape)
     const { side, values } = spectrum
     expect(values[(side ** 2 - 1) / 2]).toBe(1)

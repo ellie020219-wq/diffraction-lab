@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Aperture, BookOpen, Columns2, Grid2X2, Waves } from 'lucide-react'
 import { Controls } from './Controls'
+import { OpticalSetupDiagram } from './OpticalSetupDiagram'
 import { PatternChart, screenScales, type ScreenScale } from './PatternChart'
 import { Results } from './Results'
 import { SlitDiagram } from './SlitDiagram'
@@ -90,6 +91,7 @@ export default function App() {
             ))}
           </div>
           <div className="experiment-layout">
+            <OpticalSetupDiagram optics={optics} />
             <Controls key={mode} mode={mode} settings={settings} onChange={changeSettings}
               farRatio={farFieldRatio(optics)}
               onReset={() => { changeSettings(defaults); setScale('auto') }}

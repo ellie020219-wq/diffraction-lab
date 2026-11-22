@@ -14,7 +14,10 @@ export function screenStep(spectrum: Spectrum, apertureSize: number, light: Illu
 }
 
 export function intensityAt(spectrum: Spectrum, xBins: number, yBins: number) {
-  const { side, real, imag } = spectrum
+  return Math.min(1, interpolatedPower(spectrum, xBins, yBins))
+}
+
+export function interpolatedPower({ side, real, imag }: Pick<Spectrum, 'side' | 'real' | 'imag'>, xBins: number, yBins: number) {
   const center = (side - 1) / 2
   const x = center + xBins
   const y = center + yBins
@@ -35,7 +38,7 @@ export function intensityAt(spectrum: Spectrum, xBins: number, yBins: number) {
   const w11 = tx * ty
   const re = w00 * real[lowerLeft] + w10 * real[lowerRight] + w01 * real[upperLeft] + w11 * real[upperRight]
   const im = w00 * imag[lowerLeft] + w10 * imag[lowerRight] + w01 * imag[upperLeft] + w11 * imag[upperRight]
-  return Math.min(1, re ** 2 + im ** 2)
+  return re ** 2 + im ** 2
 }
 
 export function screenLimits(aperture: Aperture, light: Illumination, fixed: number | null = null) {

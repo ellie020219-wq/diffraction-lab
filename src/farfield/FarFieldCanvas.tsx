@@ -9,9 +9,10 @@ const fieldPixels = 353
 interface AperturePlotProps {
   aperture: Aperture
   label: string
+  showScale?: boolean
 }
 
-export function AperturePlot({ aperture, label }: AperturePlotProps) {
+export function AperturePlot({ aperture, label, showScale }: AperturePlotProps) {
   const ref = useRef<HTMLCanvasElement>(null)
   const { shape, size, angle, spacing } = aperture
   useEffect(() => {
@@ -34,14 +35,27 @@ export function AperturePlot({ aperture, label }: AperturePlotProps) {
     }
     context.putImageData(image, 0, 0)
   }, [shape, size, angle, spacing])
-  return (
+  const plot = (
     <div className="ff-aperture-plot">
       <canvas ref={ref} width={aperturePixels} height={aperturePixels} role="img" aria-label={label} />
-      <span className="ff-coordinate-x" aria-hidden="true">x</span>
-      <span className="ff-coordinate-y" aria-hidden="true">y</span>
+      {!showScale && <>
+        <span className="ff-coordinate-x" aria-hidden="true">x</span>
+        <span className="ff-coordinate-y" aria-hidden="true">y</span>
+      </>}
       <i className="ff-aperture-center" aria-hidden="true" />
     </div>
   )
+  if (!showScale) return plot
+  const half = apertureRadius(aperture) * 1.21
+  const unit = half < 1e-3 ? 'μm' : 'mm'
+  const tick = Number((half * (unit === 'μm' ? 1e6 : 1e3)).toPrecision(4))
+  return <div className="ff-aperture-scale" role="group" aria-label={`孔徑 x、y 視野均為 ±${tick} ${unit}`}>
+    <div className="ff-aperture-y" aria-hidden="true"><span>+{tick}</span><span>0</span><span>−{tick}</span></div>
+    {plot}
+    <p className="ff-aperture-y-unit">y ({unit})</p>
+    <div className="ff-aperture-x" aria-hidden="true"><span>−{tick}</span><span>0</span><span>+{tick}</span></div>
+    <p className="ff-aperture-x-unit">x ({unit})</p>
+  </div>
 }
 
 interface FieldImageProps {

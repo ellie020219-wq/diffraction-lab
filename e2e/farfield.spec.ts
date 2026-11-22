@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { expect, test, type Locator } from '@playwright/test'
-import { shapes, type Shape } from '../src/farfield/apertures'
+import { referenceShapes, type Shape } from '../src/farfield/apertures'
 import { intensityColor } from '../src/farfield/intensity'
 import { lessons } from '../src/farfield/shapeLessons'
 
@@ -35,7 +35,7 @@ test('六種正式畫布皆符合獨立參考圖的亮紋與色階', async ({ pa
   await page.getByRole('spinbutton', { name: '孔徑尺寸' }).fill('1000')
   await page.getByRole('spinbutton', { name: '屏幕距離' }).fill('10000')
   const field = page.getByRole('img', { name: '二維遠場繞射強度圖' })
-  for (const shape of shapes) {
+  for (const shape of referenceShapes) {
     await page.getByRole('button', { name: lessons[shape].title, exact: true }).click()
     if (shape === 'double-circle') await page.getByRole('spinbutton', { name: '雙圓孔中心間距' }).fill('2000')
     await expect(field).toHaveAttribute('data-fft', '2048')

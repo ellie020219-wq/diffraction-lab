@@ -1,4 +1,5 @@
-export const shapes = ['circle', 'square', 'triangle', 'hexagon', 'stadium', 'double-circle'] as const
+export const referenceShapes = ['circle', 'square', 'triangle', 'hexagon', 'stadium', 'double-circle'] as const
+export const shapes = [...referenceShapes, 'rectangle', 'ellipse', 'cross'] as const
 export type Shape = typeof shapes[number]
 
 export interface Aperture {
@@ -32,6 +33,8 @@ function regularVertices(count: number) {
 export function apertureRadius(aperture: Aperture) {
   switch (aperture.shape) {
     case 'square': return aperture.size / Math.SQRT2
+    case 'rectangle': return Math.hypot(0.5, 0.25) * aperture.size
+    case 'cross': return Math.hypot(0.5, 1 / 6) * aperture.size
     case 'stadium': return aperture.size
     case 'double-circle': return (aperture.size + aperture.spacing) / 2
     default: return aperture.size / 2
@@ -55,6 +58,9 @@ export function apertureSampler(aperture: Aperture) {
     switch (aperture.shape) {
       case 'circle': return x * x + y * y <= 0.25
       case 'square': return Math.abs(x) <= 0.5 && Math.abs(y) <= 0.5
+      case 'rectangle': return Math.abs(x) <= 0.5 && Math.abs(y) <= 0.25
+      case 'ellipse': return x * x + 4 * y * y <= 0.25
+      case 'cross': return Math.max(Math.abs(x), Math.abs(y)) <= 0.5 && Math.min(Math.abs(x), Math.abs(y)) <= 1 / 6
       case 'stadium': return Math.max(0, Math.abs(x) - 0.5) ** 2 + y * y <= 0.25
       case 'double-circle': return (Math.abs(x) - offset) ** 2 + y * y <= 0.25
       case 'triangle':
@@ -91,6 +97,8 @@ export function samplingCheck(aperture: Aperture) {
   const step = 2.4 * apertureRadius(aperture) / samplesPerAxis
   const shortest = aperture.shape === 'double-circle'
     ? Math.min(aperture.size, aperture.spacing - aperture.size)
-    : aperture.shape === 'triangle' ? 0.75 * aperture.size : aperture.size
+    : aperture.shape === 'triangle' ? 0.75 * aperture.size
+      : aperture.shape === 'rectangle' || aperture.shape === 'ellipse' ? aperture.size / 2
+      : aperture.shape === 'cross' ? aperture.size / 3 : aperture.size
   return { adequate: shortest / step >= 8, step }
 }
