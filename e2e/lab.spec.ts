@@ -7,7 +7,7 @@ async function canvasImage(canvas: Locator) {
 test('能操作三種模式，數值、曲線和亮紋會跟著變動', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.goto('./')
+  await page.goto('./#/slits')
   await expect(page).toHaveTitle(/光的干涉與繞射/)
   const canvas = page.getByRole('img', { name: '依照波長上色的屏幕亮紋' })
   const curve = page.locator('.plot-canvas')
@@ -53,7 +53,7 @@ test('能操作三種模式，數值、曲線和亮紋會跟著變動', async ({
 })
 
 test('光柵預設涵蓋三個正級次，第四級不存在，頁面在視窗內排版', async ({ page }) => {
-  await page.goto('./')
+  await page.goto('./#/slits')
   await page.getByRole('button', { name: 'N 縫光柵' }).click()
   await page.getByRole('button', { name: /套用 532.0 nm/ }).click()
   await expect(page.getByText(/第 ±4 級不存在/)).toBeVisible()
@@ -74,7 +74,7 @@ test('光柵預設涵蓋三個正級次，第四級不存在，頁面在視窗�
 })
 
 test('屏幕檢視、全部級次與分頁可操作', async ({ page }) => {
-  await page.goto('./')
+  await page.goto('./#/slits')
   const range = page.getByRole('combobox', { name: '屏幕檢視範圍' })
   const visible = await page.locator('.chart-probe').textContent()
   await range.selectOption('wide')
@@ -87,7 +87,7 @@ test('屏幕檢視、全部級次與分頁可操作', async ({ page }) => {
 })
 
 test('狹縫示意圖跟隨三種模式、保留寬距比例並放大極窄狹縫', async ({ page }) => {
-  await page.goto('./')
+  await page.goto('./#/slits')
   const diagram = page.getByRole('region', { name: '即時狹縫示意圖' })
   const overview = diagram.locator('.slit-overview')
   const openings = overview.locator('.slit-opening')
@@ -148,9 +148,9 @@ test('狹縫示意圖跟隨三種模式、保留寬距比例並放大極窄狹�
   expect((await magnified.locator('.slit-opening').boundingBox())!.width).toBeGreaterThan(16)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
 
-  await page.getByRole('link', { name: '形狀 → 遠場繞射' }).click()
+  await page.getByRole('link', { name: '二維孔徑繞射' }).click()
   await expect(page.getByRole('img', { name: '二維遠場繞射強度圖' })).toBeVisible()
   await expect(diagram).toBeHidden()
-  await page.getByRole('link', { name: '模擬實驗', exact: true }).click()
+  await page.getByRole('link', { name: '一維干涉與繞射', exact: true }).click()
   await expect(openings).toHaveCount(24)
 })

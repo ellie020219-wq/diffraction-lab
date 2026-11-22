@@ -59,9 +59,9 @@ test('六種正式畫布皆符合獨立參考圖的亮紋與色階', async ({ pa
 })
 
 test('更改參數、快速拖曳與輸入驗證，返回第一階段仍保留設定', async ({ page }) => {
-  await page.goto('./')
+  await page.goto('./#/slits')
   await page.getByRole('spinbutton', { name: /波長/ }).fill('520')
-  await page.getByRole('link', { name: '形狀 → 遠場繞射' }).click()
+  await page.getByRole('link', { name: '二維孔徑繞射' }).click()
   await page.getByRole('button', { name: '體育場形', exact: true }).click()
   const field = page.getByRole('img', { name: '二維遠場繞射強度圖' })
   await expect(field).toHaveAttribute('data-fft', '2048')
@@ -101,9 +101,9 @@ test('更改參數、快速拖曳與輸入驗證，返回第一階段仍保留�
   const fixedWidth = await field.getAttribute('data-screen-half-width')
   await distance.fill('9600')
   await expect(field).toHaveAttribute('data-screen-half-width', fixedWidth!)
-  await page.getByRole('link', { name: '模擬實驗', exact: true }).click()
+  await page.getByRole('link', { name: '一維干涉與繞射', exact: true }).click()
   await expect(page.getByRole('spinbutton', { name: /波長/ })).toHaveValue('520.0')
-  await page.getByRole('link', { name: '形狀 → 遠場繞射' }).click()
+  await page.getByRole('link', { name: '二維孔徑繞射' }).click()
   await page.reload()
   await expect(field).toBeVisible()
 })

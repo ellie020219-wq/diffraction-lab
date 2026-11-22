@@ -8,7 +8,7 @@ async function centerColor(canvas: Locator) {
 }
 
 test('光學架構圖隨第一階段的波長、孔徑與屏幕距離更新', async ({ page }) => {
-  await page.goto('./')
+  await page.goto('./#/slits')
   const setup = page.getByRole('region', { name: '光學實驗架構示意圖' })
   await expect(setup.getByText('平行單色光源')).toBeVisible()
   await expect(setup.getByText('孔徑屏障')).toBeVisible()

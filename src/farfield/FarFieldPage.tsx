@@ -1,9 +1,11 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Aperture as ApertureIcon, CircleHelp, Focus, GitCompareArrows, Info, Lock, Unlock } from 'lucide-react'
 import { apertureKey, samplingCheck } from './apertures'
-import { formatAngle, formatFresnel, formatMm, formatSize } from '../format'
+import { OpticalBench } from '../OpticalBench'
+import { routes } from '../navigation'
+import { formatAngle, formatFresnel, formatMm, formatSize, formatWavelength } from '../format'
 import { AperturePlot, FarFieldPlot } from './FarFieldCanvas'
-import { defaultSettings, FarFieldControls, ScaleSelector, ShapeSelector, toAperture, toLight } from './FarFieldControls'
+import { defaultSettings, FarFieldControls, ScaleSelector, ShapeSelector, toAperture, toLight, type Settings } from './FarFieldControls'
 import { FarFieldQuiz } from './FarFieldQuiz'
 import { screenLimits, type IntensityScale } from './intensity'
 import { lessons } from './shapeLessons'
@@ -11,10 +13,18 @@ import { useFarField, useFarFieldEngine } from './useFarField'
 
 const PropagationPanel = lazy(() => import('../fresnel/PropagationPanel'))
 
-export default function FarFieldPage() {
-  const [settings, setSettings] = useState(defaultSettings)
-  const [tab, setTab] = useState<'lab' | 'quiz' | 'comparison'>('lab')
-  const [quizStarted, setQuizStarted] = useState(false)
+export default function FarFieldPage({ tab, settings, setSettings }: {
+  tab: 'lab' | 'quiz' | 'comparison' | null
+  settings: Settings
+  setSettings: (settings: Settings) => void
+}) {
+  const [quizStarted, setQuizStarted] = useState(tab === 'quiz')
+  const [comparisonOpened, setComparisonOpened] = useState(tab === 'comparison')
+  const isComparison = tab === 'comparison'
+  useEffect(() => {
+    if (tab === 'quiz') setQuizStarted(true)
+    if (tab === 'comparison') setComparisonOpened(true)
+  }, [tab])
   const [scale, setScale] = useState<IntensityScale>('log')
   const [fixed, setFixed] = useState<number | null>(null)
   const { engine, error } = useFarFieldEngine()
@@ -25,24 +35,32 @@ export default function FarFieldPage() {
   const { halfWidth, fresnel, samplingAdequate, clipped } = screenLimits(aperture, light, fixed)
   const warning = fresnel > 0.1 || !samplingAdequate || clipped
 
-  return <main className="page ff-page" id="farfield-content" tabIndex={-1}>
+  return <div className="ff-page">
     <div className="intro ff-intro">
-      <span className="intro-label"><span /> 二維 Fraunhofer 遠場模擬</span>
-      <h1>形狀 <span>→</span> 遠場繞射</h1>
-      <p>讓平面波穿過不同的孔徑，觀察形狀、尺寸和方向如何改變屏幕上的光。</p>
+      <span className="intro-label"><span /> {isComparison ? 'Fresnel 與 Fraunhofer' : '二維 Fraunhofer 遠場模擬'}</span>
+      <h1>{isComparison ? '近場與遠場比較' : <>形狀 <span>→</span> 遠場繞射</>}</h1>
+      <p>{isComparison ? '移動觀察屏幕，比較同一孔徑在相同距離下的兩種繞射預測。'
+        : '讓平面波穿過不同的孔徑，觀察形狀、尺寸和方向如何改變屏幕上的光。'}</p>
     </div>
     <div className="ff-tabs" role="group" aria-label="學習模式">
-      <button type="button" aria-pressed={tab === 'lab'} onClick={() => setTab('lab')}>
+      <button type="button" aria-pressed={tab === 'lab'} onClick={() => { window.location.hash = routes.farfield }}>
         <Focus size={17} aria-hidden="true" /> 繞射模擬
       </button>
-      <button type="button" aria-pressed={tab === 'quiz'} onClick={() => { setQuizStarted(true); setTab('quiz') }}>
+      <button type="button" aria-pressed={tab === 'quiz'} onClick={() => { window.location.hash = routes.quiz }}>
         <CircleHelp size={17} aria-hidden="true" /> 猜猜看
       </button>
-      <button type="button" aria-pressed={tab === 'comparison'} onClick={() => setTab('comparison')}>
+      <button type="button" aria-pressed={tab === 'comparison'} onClick={() => { window.location.hash = routes.comparison }}>
         <GitCompareArrows size={17} aria-hidden="true" /> 近遠場比較
       </button>
     </div>
     <section aria-label="二維繞射模擬" hidden={tab !== 'lab'}>
+      <details className="ff-card farfield-setup">
+        <summary>光學實驗架構示意圖</summary>
+        <figure>
+          <OpticalBench aperture={aperture} label={`平行單色光垂直入射${lesson.title}，經自由空間傳至觀察屏幕`} />
+          <figcaption>λ = {formatWavelength(settings.wavelengthNm)} nm · {lesson.title} · {lesson.size} {formatSize(settings.sizeUm)} μm · z = {formatMm(light.distance)} mm（孔徑至屏幕）。光路採教學示意比例。</figcaption>
+        </figure>
+      </details>
       <ShapeSelector shape={settings.shape} change={(shape) => setSettings({ ...settings, shape })} />
       <div className="ff-lab-grid">
         <div className="ff-left-rail">
@@ -108,9 +126,13 @@ export default function FarFieldPage() {
         </div>
       </div>
     </section>
-    {tab === 'comparison' && <Suspense fallback={<p role="status">正在載入近遠場比較…</p>}>
-      <PropagationPanel settings={settings} changeSettings={setSettings} />
-    </Suspense>}
-    {quizStarted && <div hidden={tab !== 'quiz'}><FarFieldQuiz engine={engine} error={error} /></div>}
-  </main>
+    {(comparisonOpened || tab === 'comparison') && <div hidden={tab !== 'comparison'}>
+      <Suspense fallback={<p role="status">正在載入近遠場比較…</p>}>
+        <PropagationPanel active={tab === 'comparison'} settings={settings} changeSettings={setSettings} />
+      </Suspense>
+    </div>}
+    {(quizStarted || tab === 'quiz') && <div hidden={tab !== 'quiz'}>
+      <FarFieldQuiz engine={tab === 'quiz' ? engine : null} error={error} />
+    </div>}
+  </div>
 }

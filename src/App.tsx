@@ -1,12 +1,11 @@
-import { lazy, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { Aperture, BookOpen, Columns2, Grid2X2, Waves } from 'lucide-react'
-import { Controls } from './Controls'
-import { OpticalSetupDiagram } from './OpticalSetupDiagram'
-import { PatternChart, screenScales, type ScreenScale } from './PatternChart'
-import { Results } from './Results'
-import { SlitDiagram } from './SlitDiagram'
-import { farFieldRatio, localMaxima, samplePattern, sinFromPosition, theory } from './optics'
-import { automaticHalfWidth, defaults, greenGrating, toModel, type Mode, type Settings } from './settings'
+import { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { Aperture, ArrowLeft } from 'lucide-react'
+import { LabHome } from './LabHome'
+import { ModelGuide } from './ModelGuide'
+import { SlitExperiment } from './SlitExperiment'
+import { defaultSettings } from './farfield/FarFieldControls'
+import { pageFor, routes, type Page } from './navigation'
+import type { Mode } from './settings'
 
 const FarFieldPage = lazy(() => import('./farfield/FarFieldPage'))
 
@@ -15,120 +14,73 @@ function subscribeHash(change: () => void) {
   return () => window.removeEventListener('hashchange', change)
 }
 
-const modes = [
-  { id: 'single', label: '單狹縫', icon: Waves },
-  { id: 'double', label: '雙狹縫', icon: Columns2 },
-  { id: 'grating', label: 'N 縫光柵', icon: Grid2X2 },
-] as const
+const navigation: ReadonlyArray<{ page: Page; label: string }> = [
+  { page: 'home', label: '首頁' },
+  { page: 'slits', label: '一維干涉與繞射' },
+  { page: 'farfield', label: '二維孔徑繞射' },
+  { page: 'comparison', label: '近場與遠場比較' },
+  { page: 'model', label: '模型說明' },
+]
 
 export default function App() {
   const hash = useSyncExternalStore(subscribeHash, () => window.location.hash)
-  const showFarField = hash === '#/farfield'
+  const page = pageFor(hash)
+  const tab = page === 'farfield' ? 'lab' : page === 'comparison' ? 'comparison' : page === 'quiz' ? 'quiz' : null
+  const [slitsOpened, setSlitsOpened] = useState(page === 'slits')
+  const [farFieldOpened, setFarFieldOpened] = useState(tab !== null)
+  const [mode, setMode] = useState<Mode>('double')
+  const [apertureSettings, setApertureSettings] = useState(defaultSettings)
+  const content = useRef<HTMLElement>(null)
+  const previousHash = useRef(hash)
 
   useEffect(() => {
-    if (showFarField) window.scrollTo(0, 0)
-    else if (['#experiment', '#results', '#model'].includes(hash)) {
-      document.getElementById(hash.slice(1))?.scrollIntoView()
+    if (page === 'slits') setSlitsOpened(true)
+    if (tab !== null) setFarFieldOpened(true)
+  }, [page, tab])
+
+  useEffect(() => {
+    if (previousHash.current !== hash) {
+      content.current?.focus({ preventScroll: true })
+      window.scrollTo(0, 0)
     }
-  }, [hash, showFarField])
-
-  const [mode, setMode] = useState<Mode>('double')
-  const [allSettings, setAllSettings] = useState<Record<Mode, Settings>>({
-    single: defaults,
-    double: defaults,
-    grating: defaults,
-  })
-  const [scale, setScale] = useState<ScreenScale>('auto')
-  const settings = allSettings[mode]
-  const { optics, widthToPitch } = useMemo(() => toModel(mode, settings), [mode, settings])
-  const halfWidth = automaticHalfWidth(optics) * screenScales[scale]
-  const visibleU = sinFromPosition(halfWidth, optics.distance)
-  const allTheory = useMemo(() => theory(optics, widthToPitch), [optics, widthToPitch])
-  const visibleTheory = useMemo(() => allTheory.filter(({ x }) =>
-    x !== null && Math.abs(x) <= halfWidth * (1 + 8 * Number.EPSILON)), [allTheory, halfWidth])
-  const maxima = useMemo(() => localMaxima(optics, visibleU), [optics, visibleU])
-  const samples = useMemo(() => samplePattern(optics, halfWidth, maxima, visibleTheory),
-    [optics, halfWidth, maxima, visibleTheory])
-
-  function changeSettings(next: Settings) {
-    setAllSettings((previous) => ({ ...previous, [mode]: next }))
-  }
+    previousHash.current = hash
+    if (hash === '#experiment' || hash === '#results' || hash === '#model') {
+      document.getElementById(hash.slice(1))?.scrollIntoView?.()
+    }
+  }, [hash])
 
   return (
     <>
-      <a className="skip-link" href={showFarField ? "#/farfield" : "#experiment"}
-        onClick={showFarField ? (event) => {
-          event.preventDefault()
-          const main = document.getElementById("farfield-content")
-          main?.focus()
-          main?.scrollIntoView()
-        } : undefined}>跳至模擬實驗</a>
+      <a className="skip-link" href="#main-content" onClick={(event) => {
+        event.preventDefault()
+        content.current?.focus()
+      }}>跳至主要內容</a>
       <header className="site-header">
         <div className="header-inner">
-          <a href="#" className="brand"><span className="brand-icon"><Aperture size={22} aria-hidden="true" /></span>
+          <a href={routes.home} className="brand"><span className="brand-icon"><Aperture size={22} aria-hidden="true" /></span>
             光學實驗室
           </a>
-          <nav aria-label="網站導覽">
-            <a href="#experiment">模擬實驗</a>
-            <a href="#results">理論數值</a>
-            <a href="#model"><BookOpen size={15} aria-hidden="true" /> 模型說明</a>
-            <a className="nav-farfield" href="#/farfield" aria-current={showFarField ? 'page' : undefined}>形狀 → 遠場繞射</a>
+          <nav className="site-nav" aria-label="網站導覽">
+            {navigation.map(({ page: target, label }) => <a key={target} href={routes[target]}
+              aria-current={target === page || (target === 'farfield' && page === 'quiz') ? 'page' : undefined}>{label}</a>)}
           </nav>
         </div>
       </header>
-      <main className="page" hidden={showFarField}>
-        <div className="intro">
-          <span className="intro-label"><span /> Fraunhofer 遠場模擬</span>
-          <h1>光的干涉與繞射</h1>
-          <p>調整光源與狹縫，觀察屏幕上的光如何形成亮紋與暗紋。</p>
+      <main className="page" id="main-content" tabIndex={-1} ref={content}>
+        {page !== 'home' && <a href={routes.home} className="back-home"><ArrowLeft size={16} aria-hidden="true" /> 返回首頁</a>}
+        <div hidden={page !== 'home'}>
+          <LabHome chooseMode={setMode} chooseShape={(shape) => setApertureSettings((settings) => ({ ...settings, shape }))} />
         </div>
-        <section id="experiment" aria-label="模擬實驗">
-          <div className="mode-selector" role="group" aria-label="狹縫模式">
-            {modes.map(({ id, label, icon: Icon }) => (
-              <button type="button" key={id} aria-pressed={mode === id} onClick={() => setMode(id)}>
-                <Icon size={19} strokeWidth={1.8} aria-hidden="true" /> {label}
-              </button>
-            ))}
-          </div>
-          <div className="experiment-layout">
-            <OpticalSetupDiagram optics={optics} />
-            <Controls key={mode} mode={mode} settings={settings} onChange={changeSettings}
-              farRatio={farFieldRatio(optics)}
-              onReset={() => { changeSettings(defaults); setScale('auto') }}
-              onGratingExample={() => { changeSettings(greenGrating); setScale('auto') }} />
-            <div className="experiment-output">
-              <SlitDiagram slitWidth={optics.slitWidth} slitPitch={optics.slitPitch} slitCount={optics.slitCount} />
-              <PatternChart model={optics} wavelengthNm={settings.wavelengthNm} samples={samples}
-                halfWidth={halfWidth} theory={visibleTheory} maxima={maxima} scale={scale} onScaleChange={setScale} />
-              <Results key={mode} single={mode === 'single'} visible={visibleTheory} all={allTheory} maxima={maxima} />
-            </div>
-          </div>
-        </section>
-        <section className="model-section" id="model" aria-labelledby="model-title">
-          <h2 id="model-title"><BookOpen size={20} aria-hidden="true" /> 模型說明</h2>
-          <div className="model-grid">
-            <div>
-              <h3>屏幕位置如何換算角度？</h3>
-              <p className="equation">sin θ = x / √(L² + x²)</p>
-              <p>以屏幕中央為原點，使用完整幾何關係。角度較大時，等間隔的 sin θ 對應到越來越遠的屏幕位置。</p>
-            </div>
-            <div>
-              <h3>理論級次在哪裡？</h3>
-              <p className="equation">d sin θ = mλ</p>
-              <p>方框標示理論干涉級次，實心圓標示總強度的局部極大。單縫包絡會改變峰值的高度，也可能移動峰值的位置。</p>
-            </div>
-            <div>
-              <h3>什麼時候會缺級？</h3>
-              <p className="equation">ma = pd，p ≠ 0</p>
-              <p>當理論干涉級次與單縫暗紋重合，該處強度為零。例如縫距是縫寬的三倍時，每第三級缺級。</p>
-            </div>
-          </div>
-          <p className="model-note">模型假設單色平面波垂直入射。總孔徑寬度 D = a + (N − 1)d。當 D²／(λL) &gt; 0.1，實驗會提示遠場近似的誤差可能偏大。</p>
-        </section>
+        {(page === 'slits' || slitsOpened) && <div hidden={page !== 'slits'}>
+          <SlitExperiment mode={mode} setMode={setMode} />
+        </div>}
+        {(tab !== null || farFieldOpened) && <div hidden={tab === null}>
+          <Suspense fallback={<p className="ff-loading" role="status">正在載入二維孔徑實驗…</p>}>
+            <FarFieldPage tab={tab} settings={apertureSettings} setSettings={setApertureSettings} />
+          </Suspense>
+        </div>}
+        {page === 'model' && <ModelGuide />}
       </main>
-      {showFarField && <Suspense fallback={<p className="page ff-loading" role="status">正在載入遠場繞射實驗…</p>}>
-        <FarFieldPage />
-      </Suspense>}
       <footer className="site-footer"><Aperture size={16} aria-hidden="true" /> 光的干涉與繞射互動實驗室</footer>
     </>
   )

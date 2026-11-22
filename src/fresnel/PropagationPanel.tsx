@@ -16,7 +16,8 @@ import { TeachingExperiments } from './TeachingExperiments'
 import type { TeachingPreset } from './teachingPresets'
 import { useFresnel } from './useFresnel'
 
-export default function PropagationPanel({ settings, changeSettings }: {
+export default function PropagationPanel({ active, settings, changeSettings }: {
+  active: boolean
   settings: Settings
   changeSettings: (settings: Settings) => void
 }) {
@@ -38,7 +39,7 @@ export default function PropagationPanel({ settings, changeSettings }: {
   const number = fresnelNumber(aperture, light)
   const fieldKey = [apertureKey(aperture), aperture.size, wavelength, distance, halfWidth].join(':')
   const input = useMemo<FrameInput>(() => ({ aperture, light, halfWidth, preview: dragging }), [aperture, light, halfWidth, dragging])
-  const { current, workerError } = useFresnel(input, fieldKey, adequate)
+  const { current, workerError } = useFresnel(input, fieldKey, active && adequate)
   const reply = current?.reply
   const field = reply && 'field' in reply ? reply.field : undefined
   const failure = workerError || (reply && 'error' in reply ? reply.error : '')
