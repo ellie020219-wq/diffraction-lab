@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const baseURL = 'http://127.0.0.1:4180/diffraction-lab/'
+const publishedURL = process.env.PLAYWRIGHT_BASE_URL
+const baseURL = publishedURL ?? 'http://127.0.0.1:4180/diffraction-lab/'
 
 export default defineConfig({
   testDir: './e2e',
@@ -17,7 +18,7 @@ export default defineConfig({
     { name: '桌面 Chromium', use: { ...devices['Desktop Chrome'] } },
     { name: '手機 Chromium', use: { ...devices['Pixel 7'] } },
   ],
-  webServer: {
+  webServer: publishedURL ? undefined : {
     command: 'npm run preview -- --host 127.0.0.1 --port 4180 --strictPort',
     url: baseURL,
     reuseExistingServer: false,

@@ -1,0 +1,56 @@
+name: Check public GitHub Pages
+
+on:
+  workflow_run:
+    workflows: [Verify and deploy GitHub Pages]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  check-public-site:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      PLAYWRIGHT_BASE_URL: https://ellie020219-wq.github.io/diffraction-lab/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Wait for the deployed build
+        run: |
+          node --input-type=module <<'JS'
+          import { readFile } from 'node:fs/promises'
+          import { setTimeout } from 'node:timers/promises'
+
+          const build = await readFile('dist/index.html', 'utf8')
+          const entry = build.match(/<script[^>]+src="([^"]+)"/)?.[1]
+          if (!entry) throw new Error('The production build has no script entry')
+
+          const site = process.env.PLAYWRIGHT_BASE_URL
+          for (let attempt = 1; attempt <= 12; attempt++) {
+            try {
+              const response = await fetch(site, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
+              if (response.ok && (await response.text()).includes(entry)) {
+                console.log('Public GitHub Pages serves ' + entry)
+                process.exit(0)
+              }
+              console.log('Attempt ' + attempt + ': HTTP ' + response.status + ', waiting for ' + entry)
+            } catch (error) {
+              console.log('Attempt ' + attempt + ': ' + error.message)
+            }
+            await setTimeout(5000)
+          }
+          throw new Error('The public page did not serve the deployed build in time')
+          JS
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

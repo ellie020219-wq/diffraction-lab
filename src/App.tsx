@@ -1,10 +1,17 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Aperture, BookOpen, Columns2, Grid2X2, Waves } from 'lucide-react'
 import { Controls } from './Controls'
 import { PatternChart, screenScales, type ScreenScale } from './PatternChart'
 import { Results } from './Results'
 import { farFieldRatio, localMaxima, samplePattern, sinFromPosition, theory } from './optics'
 import { automaticHalfWidth, defaults, greenGrating, toModel, type Mode, type Settings } from './settings'
+
+const FarFieldPage = lazy(() => import('./farfield/FarFieldPage'))
+
+function subscribeHash(change: () => void) {
+  window.addEventListener('hashchange', change)
+  return () => window.removeEventListener('hashchange', change)
+}
 
 const modes = [
   { id: 'single', label: '單狹縫', icon: Waves },
@@ -13,6 +20,16 @@ const modes = [
 ] as const
 
 export default function App() {
+  const hash = useSyncExternalStore(subscribeHash, () => window.location.hash)
+  const showFarField = hash === '#/farfield'
+
+  useEffect(() => {
+    if (showFarField) window.scrollTo(0, 0)
+    else if (['#experiment', '#results', '#model'].includes(hash)) {
+      document.getElementById(hash.slice(1))?.scrollIntoView()
+    }
+  }, [hash, showFarField])
+
   const [mode, setMode] = useState<Mode>('double')
   const [allSettings, setAllSettings] = useState<Record<Mode, Settings>>({
     single: defaults,
@@ -37,7 +54,13 @@ export default function App() {
 
   return (
     <>
-      <a className="skip-link" href="#experiment">跳至模擬實驗</a>
+      <a className="skip-link" href={showFarField ? "#/farfield" : "#experiment"}
+        onClick={showFarField ? (event) => {
+          event.preventDefault()
+          const main = document.getElementById("farfield-content")
+          main?.focus()
+          main?.scrollIntoView()
+        } : undefined}>跳至模擬實驗</a>
       <header className="site-header">
         <div className="header-inner">
           <a href="#" className="brand"><span className="brand-icon"><Aperture size={22} aria-hidden="true" /></span>
@@ -47,10 +70,11 @@ export default function App() {
             <a href="#experiment">模擬實驗</a>
             <a href="#results">理論數值</a>
             <a href="#model"><BookOpen size={15} aria-hidden="true" /> 模型說明</a>
+            <a className="nav-farfield" href="#/farfield" aria-current={showFarField ? 'page' : undefined}>形狀 → 遠場繞射</a>
           </nav>
         </div>
       </header>
-      <main className="page">
+      <main className="page" hidden={showFarField}>
         <div className="intro">
           <span className="intro-label"><span /> Fraunhofer 遠場模擬</span>
           <h1>光的干涉與繞射</h1>
@@ -98,6 +122,9 @@ export default function App() {
           <p className="model-note">模型假設單色平面波垂直入射。總孔徑寬度 D = a + (N − 1)d。當 D²／(λL) &gt; 0.1，實驗會提示遠場近似的誤差可能偏大。</p>
         </section>
       </main>
+      {showFarField && <Suspense fallback={<p className="page ff-loading" role="status">正在載入遠場繞射實驗…</p>}>
+        <FarFieldPage />
+      </Suspense>}
       <footer className="site-footer"><Aperture size={16} aria-hidden="true" /> 光的干涉與繞射互動實驗室</footer>
     </>
   )
