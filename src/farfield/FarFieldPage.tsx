@@ -19,7 +19,7 @@ export default function FarFieldPage() {
   const { engine, error } = useFarFieldEngine()
   const aperture = toAperture(settings)
   const light = toLight(settings)
-  const result = useFarField(engine, aperture)
+  const result = useFarField(tab === 'lab' ? engine : null, aperture)
   const lesson = lessons[settings.shape]
   const { halfWidth, fresnel, samplingAdequate, clipped } = screenLimits(aperture, light, fixed)
   const warning = fresnel > 0.1 || !samplingAdequate || clipped
@@ -108,7 +108,7 @@ export default function FarFieldPage() {
       </div>
     </section>
     {tab === 'comparison' && <Suspense fallback={<p role="status">正在載入近遠場比較…</p>}>
-      <PropagationPanel settings={settings} selectShape={(shape) => setSettings({ ...settings, shape })} />
+      <PropagationPanel settings={settings} changeSettings={setSettings} />
     </Suspense>}
     {quizStarted && <div hidden={tab !== 'quiz'}><FarFieldQuiz engine={engine} error={error} /></div>}
   </main>

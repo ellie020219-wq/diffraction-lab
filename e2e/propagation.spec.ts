@@ -52,18 +52,21 @@ test('新孔徑可調整、顯示物理刻度並可成為猜題的正確答案',
   await expect(page.getByRole('img', { name: '十字形孔徑圖' })).toBeVisible()
 })
 
-test('比較頁共用座標與色階，動畫和拖曳保持距離、Fresnel 數與畫格同步', async ({ page }, testInfo) => {
+test('手動拖曳同步光路與圖樣，共同座標、色階及物理強度比較正常', async ({ page }, testInfo) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('./#/farfield')
   await page.getByRole('button', { name: '近遠場比較' }).click()
   const panel = page.getByRole('region', { name: '近遠場比較', exact: true })
-  await expect(panel.getByText(/各以畫面內的最大強度歸一化/)).toBeVisible()
-  await expect(panel.getByText('Fraunhofer 遠場近似誤差可能偏大')).toBeVisible()
+  await expect(panel.getByText(/各圖自身峰值模式把每張圖的可見最大強度設為 1/)).toBeVisible()
+  await expect(panel.getByText(/目前距離下的遠場理論對照/)).toBeVisible()
+  await expect(panel.getByRole('button', { name: /播放|暫停/ })).toHaveCount(0)
   const near = panel.getByRole('img', { name: 'Fresnel 近場強度圖' })
   const far = panel.getByRole('img', { name: 'Fraunhofer 遠場近似強度圖' })
   const readout = panel.locator('[data-current-distance]')
-  const slider = panel.getByRole('slider', { name: '距離播放位置' })
+  const slider = panel.getByRole('slider', { name: '傳播距離滑桿' })
+  const screen = panel.locator('[data-screen-position]')
+  const observation = panel.getByRole('region', { name: '目前觀察' })
   await expect(near).toBeVisible()
   await expect(far).toHaveAttribute('data-distance', (await readout.getAttribute('data-current-distance'))!)
   await expect(far).toHaveAttribute('data-screen-half-width', (await near.getAttribute('data-screen-half-width'))!)
@@ -82,13 +85,14 @@ test('比較頁共用座標與色階，動畫和拖曳保持距離、Fresnel 數
   await expect(far).toHaveAttribute('data-intensity-scale', 'linear')
 
   const initial = (await readout.getAttribute('data-current-distance'))!
-  await panel.getByRole('button', { name: '播放' }).click()
-  await expect.poll(() => readout.getAttribute('data-current-distance')).not.toBe(initial)
-  await panel.getByRole('button', { name: '暫停' }).click()
-  const paused = (await readout.getAttribute('data-current-distance'))!
-  await expect(near).toHaveAttribute('data-distance', paused)
-  await expect(far).toHaveAttribute('data-distance', paused)
-  await expect(panel.getByRole('button', { name: '播放' })).toBeVisible()
+  const initialScreen = (await screen.getAttribute('data-screen-position'))!
+  await expect(observation.getByText('近場特徵較明顯')).toBeVisible()
+  await expect(near).toHaveAttribute('data-intensity-factor', '1')
+  await panel.getByRole('combobox', { name: '強度歸一化' }).selectOption('shared')
+  await expect(far).toHaveAttribute('data-intensity-factor', '1')
+  expect(Number(await near.getAttribute('data-intensity-factor'))).toBeLessThan(1)
+  await panel.getByRole('combobox', { name: '強度歸一化' }).selectOption('individual')
+  await expect(near).toHaveAttribute('data-intensity-factor', '1')
 
   await slider.scrollIntoViewIfNeeded()
   const range = (await slider.boundingBox())!
@@ -99,15 +103,17 @@ test('比較頁共用座標與色階，動畫和拖曳保持距離、Fresnel 數
   await page.mouse.move(range.x + range.width * 0.33, y, { steps: 3 })
   await page.mouse.up()
   const dragged = (await readout.getAttribute('data-current-distance'))!
-  expect(dragged).not.toBe(paused)
+  expect(dragged).not.toBe(initial)
+  await expect(screen).not.toHaveAttribute('data-screen-position', initialScreen)
   await expect(near).toHaveAttribute('data-distance', dragged)
 
   await slider.press('End')
   await slider.press('Home')
   await slider.press('End')
   const latest = (await readout.getAttribute('data-current-distance'))!
-  await expect(panel.getByText('接近遠場條件')).toBeVisible()
-  await expect(panel.getByText('0.04000', { exact: true })).toBeVisible()
+  await expect(observation.getByText('接近遠場條件')).toBeVisible()
+  await expect(observation.getByText('0.04000', { exact: true })).toBeVisible()
+  await expect(screen).toHaveAttribute('data-screen-position', '707')
   await expect(near).toHaveAttribute('data-distance', latest)
   await expect(far).toHaveAttribute('data-distance', latest)
   const fieldExtent = (await near.getAttribute('data-screen-half-width'))!
@@ -122,6 +128,55 @@ test('比較頁共用座標與色階，動畫和拖曳保持距離、Fresnel 數
   await panel.getByRole('button', { name: '重設距離' }).click()
   await expect(near).toHaveAttribute('data-distance', initial)
   await expect(far).toHaveAttribute('data-distance', initial)
+  await expect(screen).toHaveAttribute('data-screen-position', initialScreen)
   expect(errors).toEqual([])
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
+})
+
+test('比較頁孔徑、波長、物理原理與觀察內容都跟隨實驗參數', async ({ page }) => {
+  await page.goto('./#/farfield')
+  await page.getByRole('button', { name: '近遠場比較' }).click()
+  const panel = page.getByRole('region', { name: '近遠場比較', exact: true })
+  const optical = panel.getByRole('region', { name: '光學實驗架構' })
+  await expect(optical.getByText('示意圖，非實際比例')).toBeVisible()
+  await expect(optical.getByText('自由空間傳播', { exact: true })).toBeVisible()
+  const opening = optical.locator('[data-aperture-outline]')
+  const circle = (await opening.getAttribute('d'))!
+  const distance = panel.locator('[data-current-distance]')
+  const initialDistance = (await distance.getAttribute('data-current-distance'))!
+  await panel.getByRole('combobox', { name: '共同孔徑' }).selectOption('rectangle')
+  await expect(opening).not.toHaveAttribute('d', circle)
+  const rectangle = (await opening.getAttribute('d'))!
+  const sizeTransform = (await opening.getAttribute('transform'))!
+  await panel.getByRole('spinbutton', { name: '孔徑尺寸' }).fill('700')
+  await expect(opening).toHaveAttribute('data-size', '700')
+  await expect(opening).not.toHaveAttribute('transform', sizeTransform)
+  await panel.getByRole('spinbutton', { name: '旋轉角度' }).fill('30')
+  await expect(opening).toHaveAttribute('data-angle', '30')
+  await expect(opening).not.toHaveAttribute('d', rectangle)
+  await panel.getByRole('spinbutton', { name: '波長' }).fill('500')
+  await expect(optical.getByText(/λ = 500 nm/)).toBeVisible()
+  await expect(distance).toHaveAttribute('data-current-distance', initialDistance)
+  const observation = panel.getByRole('region', { name: '目前觀察' })
+  await expect(observation.getByText(/半徑 R 為 .*波長 λ 為 500 nm/)).toBeVisible()
+  await expect(observation.getByText(/長方孔遠場沿長、短邊對應軸/)).toBeVisible()
+
+  await panel.getByRole('spinbutton', { name: '傳播距離', exact: true }).fill('500')
+  await expect(observation.getByText('過渡區', { exact: true })).toBeVisible()
+  await expect(panel.getByRole('img', { name: 'Fresnel 近場強度圖' })).toHaveAttribute('data-distance', '0.5')
+  const formulas = panel.locator('math')
+  await expect(formulas.first()).toBeHidden()
+  await panel.getByText('物理原理', { exact: true }).click()
+  await expect(formulas).toHaveCount(4)
+  await expect(panel.getByRole('heading', { name: /惠更斯－菲涅耳原理/ })).toBeVisible()
+  await expect(panel.getByRole('heading', { name: /菲涅耳近場繞射/ })).toBeVisible()
+  await expect(panel.getByRole('heading', { name: /夫朗和斐遠場繞射/ })).toBeVisible()
+  await expect(panel.getByRole('heading', { name: /菲涅耳數/ })).toBeVisible()
+  const fresnel = panel.locator('math[aria-label="Fresnel 傳播公式"]')
+  await expect(fresnel).toBeVisible()
+  expect(await fresnel.evaluate((formula) => formula.namespaceURI)).toBe('http://www.w3.org/1998/Math/MathML')
+  await expect(fresnel.locator('mfrac')).toHaveCount(2)
+  await expect(panel.getByText(/此刻 λ = 500 nm、z = 500 mm/)).toBeVisible()
+  await expect(panel.getByText(/0.1 可作為教學參考/)).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
 })

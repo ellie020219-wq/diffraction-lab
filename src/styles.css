@@ -885,38 +885,94 @@ nav .nav-farfield[aria-current="page"] { color: #f1f8ee; background: var(--green
 .ff-aperture-y-unit { grid-area: ylabel; text-align: end; white-space: nowrap; }
 .ff-aperture-x-unit { grid-area: xlabel; text-align: center; }
 
-.propagation-panel { min-width: 0; }
-.propagation-panel .propagation-controls { display: block; }
-.propagation-heading, .propagation-settings, .propagation-playback { display: flex; flex-wrap: wrap; gap: 9px 15px; }
-.propagation-heading { justify-content: space-between; align-items: start; }
-.propagation-heading p, .propagation-settings p, .propagation-hint { font-size: 13px; color: var(--muted); }
+.propagation-panel { display: grid; gap: 18px; min-width: 0; }
+.propagation-panel > .control-card { display: block; min-width: 0; }
+.propagation-heading, .propagation-settings, .propagation-manual, .propagation-path-heading {
+  display: flex; flex-wrap: wrap; gap: 9px 15px;
+}
+.propagation-heading, .propagation-path-heading { justify-content: space-between; align-items: center; }
+.propagation-path-heading > span { color: var(--muted); font-size: 13px; }
+.propagation-path figure { margin: 12px 0 0; }
+.propagation-path-sketch {
+  display: block; width: 100%; max-height: 230px; border: 1px solid #39584a; border-radius: 10px;
+  background: radial-gradient(ellipse at 25% 45%, #24453a, #122a24 70%); color: #e9f4eb;
+}
+.path-axis { stroke: #608376; stroke-dasharray: 4 5; opacity: .55; }
+.path-laser { fill: #344e44; stroke: #9db8ab; stroke-width: 1.4px; }
+.path-housing, .path-incident, .path-diffracted, .path-direction, .path-measure, .path-screen-mark { fill: none; }
+.path-housing, .path-direction, .path-measure { stroke: #a4c3b6; }
+.path-direction { stroke-width: 1.25px; }
+.path-screen-mark, .path-incident { stroke: #f8d394; stroke-width: 1.8px; }
+.path-incident { stroke-linecap: round; }
+.path-plate { fill: #0b1915; stroke: #829e90; stroke-width: 1.35px; }
+.path-opening { fill: #fbd894; }
+.path-diffracted { stroke: #91d3bc; stroke-width: 1.9px; }
+.path-screen { fill: #527366; stroke: #c3d5ca; stroke-width: 1.35px; }
+.path-distance-symbol { fill: #dce9e0; font: italic 16px Georgia, serif; text-anchor: middle; }
+.propagation-path-labels {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 9px;
+}
+.propagation-path-labels > div {
+  display: flex; flex-direction: column; gap: 3px; padding: 7px 8px;
+  border-radius: 7px; background: #f1f7f2; border: 1px solid var(--border);
+}
+.propagation-path-labels strong { font-size: 13px; }
+.propagation-path-labels span, .propagation-comparison-heading p, .propagation-hint, .propagation-observation dd, .propagation-theory p {
+  font-size: 13px; color: var(--muted);
+}
 .propagation-readout { display: flex; flex-wrap: wrap; gap: 5px 13px; }
 .propagation-readout > span { padding: 4px 7px; border-radius: 6px; background: var(--green-pale); font-size: 13px; }
 .propagation-readout output { display: inline-block; font: 650 13px var(--mono); }
-.propagation-settings { margin-top: 13px; align-items: center; }
+.propagation-settings { margin-top: 12px; align-items: center; }
 .propagation-settings .ff-scale { margin-inline-start: auto; }
-.propagation-settings label, .propagation-distance { font-size: 13px; }
+.propagation-settings label, .propagation-manual label { font-size: 13px; }
 .propagation-settings select, .propagation-distance input {
-  margin-inline: 4px;
-  max-width: 100%;
-  padding: 4px 5px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #f5f9f5;
+  margin-inline: 4px; max-width: 100%; padding: 4px 5px;
+  border: 1px solid var(--border); border-radius: 6px; background: #f5f9f5;
 }
+.propagation-parameters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 20px; margin-top: 8px; }
+.propagation-parameters .ff-control { display: block; padding-block: 8px 6px; border: 0; }
+.propagation-parameters .control-heading { flex-wrap: wrap; }
+.propagation-parameters .number-field input { width: 6ch; }
 .propagation-distance input { width: 100px; font: 13px var(--mono); }
-.propagation-playback { align-items: center; margin-top: 12px; }
-.propagation-playback .slider { flex: 1 1 120px; width: auto; margin: 0; }
+.propagation-manual { align-items: center; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--border); }
+.propagation-manual .slider { flex: 1 1 120px; width: auto; margin: 0; }
 .propagation-hint { margin-top: 4px; }
-.propagation-condition { margin: 12px 0; }
-.propagation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
-.propagation-figure-note { color: #c0d2c9; font-size: 13px; min-height: 1.5em; margin-top: 3px; }
+.propagation-comparison-heading { margin-bottom: 10px; }
+.propagation-comparison-heading p { margin: 4px 0 0; }
+.propagation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.propagation-figure { min-width: 0; }
+.propagation-figure-note, .propagation-figure-parameters { color: #c0d2c9; font-size: 13px; margin-top: 3px; }
+.propagation-figure-note { min-height: 2.65em; }
 .propagation-figure .ff-probe { min-height: 2.5em; }
+.propagation-observation dl { display: grid; gap: 8px; margin: 12px 0 0; }
+.propagation-observation dl div { display: grid; grid-template-columns: 10em minmax(0, 1fr); gap: 4px 12px; }
+.propagation-observation dt { font-weight: 650; font-size: 13px; }
+.propagation-observation dd { margin: 0; line-height: 1.62; }
+.propagation-principles summary {
+  display: flex; gap: 8px; align-items: center; cursor: pointer; font-weight: 700;
+  color: var(--green-deep);
+}
+.propagation-principles summary::after { content: "+"; font: 18px var(--mono); margin-inline-start: auto; }
+.propagation-principles[open] summary::after { content: "−"; }
+.propagation-theory { display: grid; gap: 14px; margin-top: 12px; }
+.propagation-theory section { min-width: 0; border-top: 1px solid var(--border); padding-top: 12px; }
+.propagation-theory h3 { font-size: 15px; margin: 0 0 7px; }
+.propagation-theory h3 span { font-size: 12px; font-weight: 500; color: var(--muted); }
+.propagation-theory p { margin: 6px 0 0; line-height: 1.65; }
+.physics-formula {
+  overflow-x: auto; min-width: 0; padding: 8px; margin: 5px 0;
+  background: #f1f7f2; color: #183c2e; border: 1px solid var(--border); border-radius: 7px;
+}
+.physics-formula math { font-size: 1.14rem; margin-inline: auto; width: max-content; }
+.propagation-panel :focus-visible { outline-offset: 3px; }
 
 @media (max-width: 1050px) { .ff-shapes { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @media (max-width: 650px) {
   .ff-shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .propagation-grid { grid-template-columns: minmax(0, 1fr); gap: 11px; }
+  .propagation-parameters, .propagation-path-labels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .propagation-observation dl div { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 550px) {
   .optical-path { gap: 11px; }
@@ -925,4 +981,7 @@ nav .nav-farfield[aria-current="page"] { color: #f1f8ee; background: var(--green
   .optical-value { font-size: 11px; }
   .ff-aperture-scale { width: min(100%, 240px); }
   .propagation-settings .ff-scale { margin-inline-start: 0; }
+  .propagation-panel { gap: 12px; }
+  .propagation-manual .slider { flex: 1 1 130px; }
+  .propagation-path-labels span { font-size: 12px; }
 }

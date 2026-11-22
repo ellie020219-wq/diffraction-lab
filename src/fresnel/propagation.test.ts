@@ -6,6 +6,7 @@ import {
   comparisonWindow, detailGrid, distanceAt, distanceBounds, distancePosition, FresnelPropagation,
   fresnelNumber, normalizeScreen, previewGrid,
 } from './propagation'
+import { comparisonFactors, explainObservation } from './observation'
 import { makeQuestion } from '../farfield/FarFieldQuiz'
 
 const rectangle: Aperture = { shape: 'rectangle', size: 600e-6, angle: 0, spacing: 1.2e-3 }
@@ -64,6 +65,35 @@ describe('Fresnel 傍軸傳播', () => {
       expect(Math.max(...field)).toBe(1)
       expect(field.every((value) => Number.isFinite(value) && value >= 0 && value <= 1)).toBe(true)
     }
+  })
+
+  it('共同基準保留單位入射振幅下的強度比例', () => {
+    const light = atFresnel(circle, 2)
+    const halfWidth = comparisonWindow(circle, light, true).halfWidth
+    const { peaks } = new FresnelPropagation().compare(circle, light, halfWidth)
+    const { count, step } = apertureGrid(circle)
+    const expectedFarPeak = (count * step ** 2 / (light.wavelength * light.distance)) ** 2
+    expect(peaks.far).toBeCloseTo(expectedFarPeak, 9)
+    expect(peaks.near).toBeGreaterThan(0)
+    expect(comparisonFactors(peaks, 'individual')).toEqual({ near: 1, far: 1 })
+    const shared = comparisonFactors(peaks, 'shared')
+    expect(shared.far).toBe(1)
+    expect(shared.near).toBeCloseTo(peaks.near / expectedFarPeak, 9)
+    expect(peaks.near / peaks.far).toBeLessThan(1)
+  })
+
+  it('即時說明隨距離、波長與孔徑改變，顯示對應的三種教學區間', () => {
+    const close = atFresnel(circle, 2)
+    const initial = explainObservation(circle, close)
+    const changedWavelength = explainObservation(circle, { ...close, wavelength: 2 * close.wavelength })
+    expect(changedWavelength.number).toBeCloseTo(initial.number / 2, 12)
+    expect(changedWavelength.spatialFeature).not.toBe(initial.spatialFeature)
+    expect(initial.regime).toBe('近場特徵較明顯')
+    expect(explainObservation(circle, atFresnel(circle, 0.5)).regime).toBe('過渡區')
+    expect(explainObservation(circle, atFresnel(circle, 0.05)).regime).toBe('接近遠場條件')
+    const large = explainObservation({ ...circle, size: 2 * circle.size }, close)
+    expect(large.number).toBeCloseTo(4 * initial.number, 12)
+    expect(large.cause).not.toBe(initial.cause)
   })
 
   it('距離增大後，兩種傳播在共同視野逐漸收斂', () => {

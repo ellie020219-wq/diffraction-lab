@@ -61,6 +61,7 @@ export interface Comparison {
   halfWidth: number
   near: Float32Array
   far: Float32Array
+  peaks: { near: number; far: number }
 }
 
 function checkGrid(grid: Grid) {
@@ -70,7 +71,7 @@ function checkGrid(grid: Grid) {
   }
 }
 
-export function normalizeScreen(values: Float32Array) {
+function normalizeAndReadPeak(values: Float32Array) {
   let peak = 0
   for (const value of values) {
     if (!Number.isFinite(value) || value < 0) throw new Error('繞射強度超出數值範圍。')
@@ -78,6 +79,11 @@ export function normalizeScreen(values: Float32Array) {
   }
   if (peak <= 0) throw new Error('可見視野內沒有可正規化的強度，請調整距離或視野。')
   for (let index = 0; index < values.length; index++) values[index] /= peak
+  return peak
+}
+
+export function normalizeScreen(values: Float32Array) {
+  normalizeAndReadPeak(values)
   return values
 }
 
@@ -89,7 +95,7 @@ export class FresnelPropagation {
   private columnImag = new Float64Array(0)
   private mask?: { key: string; grid: ReturnType<typeof apertureGrid> }
   private readonly farFft = new FarFieldFft()
-  private far?: { key: string; spectrum: Spectrum }
+  private far?: { key: string; spectrum: Spectrum; areaPerSizeSquared: number }
 
   calculate(aperture: Aperture, light: Illumination, halfWidth: number, grid = detailGrid): FresnelField {
     checkGrid(grid)
@@ -184,7 +190,10 @@ export class FresnelPropagation {
   compare(aperture: Aperture, light: Illumination, halfWidth: number, draft = false): Comparison {
     const nearField = this.calculate(aperture, light, halfWidth, draft ? previewGrid : detailGrid)
     const key = apertureKey(aperture)
-    if (this.far?.key !== key) this.far = { key, spectrum: this.farFft.calculate(aperture, 2048) }
+    if (this.far?.key !== key) {
+      const { count, step } = apertureGrid(aperture)
+      this.far = { key, spectrum: this.farFft.calculate(aperture, 2048), areaPerSizeSquared: count * (step / aperture.size) ** 2 }
+    }
     const farField = this.far.spectrum
     const farStep = screenStep(farField, aperture.size, light)
     const near = new Float32Array(rasterSide ** 2)
@@ -199,6 +208,11 @@ export class FresnelPropagation {
         far[index] = intensityAt(farField, x / farStep, y / farStep)
       }
     }
-    return { side: rasterSide, halfWidth, near: normalizeScreen(near), far: normalizeScreen(far) }
+    // The unchanged Fraunhofer engine supplies intensity relative to its
+    // DC intensity. Recover that factor for a unit-amplitude incident wave.
+    const area = this.far.areaPerSizeSquared * aperture.size ** 2
+    const farDc = (area / (light.wavelength * light.distance)) ** 2
+    const peaks = { near: normalizeAndReadPeak(near), far: normalizeAndReadPeak(far) * farDc }
+    return { side: rasterSide, halfWidth, near, far, peaks }
   }
 }

@@ -21,6 +21,11 @@ export function toAperture(settings: Settings): Aperture {
   return { shape: settings.shape, size: settings.sizeUm * 1e-6, angle: settings.angle, spacing: settings.spacingUm * 1e-6 }
 }
 
+export function withApertureSize(settings: Settings, sizeUm: number): Settings {
+  return { ...settings, sizeUm,
+    spacingUm: Math.min(sizeUm * spacingRatio.max, Math.max(sizeUm * spacingRatio.min, settings.spacingUm)) }
+}
+
 export function toLight(settings: Settings): Illumination {
   return { wavelength: settings.wavelengthNm * 1e-9, distance: settings.distanceMm * 1e-3 }
 }
@@ -47,7 +52,7 @@ interface ParameterProps {
   change: (value: number) => void
 }
 
-function Parameter({ label, unit, min, max, value, change }: ParameterProps) {
+export function Parameter({ label, unit, min, max, value, change }: ParameterProps) {
   const id = useId()
   const [draft, setDraft] = useState<string | null>(null)
   const input = draft === null ? value : Number(draft)
@@ -102,8 +107,7 @@ export function FarFieldControls({ settings, change, reset }: ControlsProps) {
     </div>
     <div className="ff-fields" key={resetId}>
       <Parameter label="孔徑尺寸" unit="μm" {...limits.size} value={sizeUm}
-        change={(size) => change({ ...settings, sizeUm: size,
-          spacingUm: Math.min(size * spacingRatio.max, Math.max(size * spacingRatio.min, spacingUm)) })} />
+        change={(size) => change(withApertureSize(settings, size))} />
       <Parameter label="旋轉角度" unit="°" {...limits.angle} value={angle} change={(value) => change({ ...settings, angle: value })} />
       <div>
         <Parameter key={quickId}
