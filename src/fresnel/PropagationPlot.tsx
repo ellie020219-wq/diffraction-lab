@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
-import { formatMm } from '../farfield/FarFieldCanvas'
+import { formatMm, formatWavelength } from '../format'
 import { intensityColor, logFloor, type IntensityScale } from '../farfield/intensity'
 
 import type { Normalization } from './observation'
@@ -62,7 +62,7 @@ export function PropagationPlot({ title, field, side, halfWidth, distance, scale
   const colorTicks = scale === 'log' ? ['1', '10⁻²', '10⁻⁴', '10⁻⁶'] : ['1', '0.75', '0.5', '0.25', '0']
   return <section className="visual-card propagation-figure" aria-label={title}>
     <h2>{title}</h2>
-    <p className="propagation-figure-parameters">λ = {wavelength} nm · {apertureLabel} · z = {formatMm(distance)} mm</p>
+    <p className="propagation-figure-parameters">λ = {formatWavelength(wavelength)} nm · {apertureLabel} · z = {formatMm(distance)} mm</p>
     <p className="propagation-figure-note">{normalization === 'individual' ? '各圖自身峰值' : '共同基準'}{warning && ` · ${warning}`}</p>
     <div className="ff-screen-plot">
       <div className="ff-heat-layout">

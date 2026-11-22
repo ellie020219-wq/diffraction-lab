@@ -59,7 +59,7 @@ describe('實驗室介面', () => {
   it('光柵預設會選用精確的 600 lines/mm，且介面說明第四級不存在', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: 'N 縫光柵' }))
-    fireEvent.click(screen.getByRole('button', { name: /套用 532 nm/ }))
+    fireEvent.click(screen.getByRole('button', { name: /套用 532.0 nm/ }))
     expect(screen.getByText(/第 ±4 級不存在/)).toBeVisible()
     const results = screen.getByRole('table', { name: '理論干涉級次' })
     expect(within(results).getByText('73.256°')).toBeVisible()

@@ -1,10 +1,10 @@
 import { Columns2 } from 'lucide-react'
+import { formatSize } from './format'
 import type { Optics } from './optics'
 
 type SlitGeometry = Pick<Optics, 'slitWidth' | 'slitPitch' | 'slitCount'>
 
-const micrometers = new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 6, useGrouping: false })
-const lengthLabel = (meters: number) => micrometers.format(meters * 1e6) + ' μm'
+const lengthLabel = (meters: number) => formatSize(meters * 1e6) + ' μm'
 
 function Dimension({ start, end, label, className }: {
   start: number

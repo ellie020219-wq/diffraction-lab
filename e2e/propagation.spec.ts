@@ -21,13 +21,13 @@ test('光學架構圖隨第一階段的波長、孔徑與屏幕距離更新', as
   await page.getByRole('spinbutton', { name: /波長/ }).fill('532')
   await page.getByRole('spinbutton', { name: /屏幕距離/ }).fill('2.5')
   await page.getByRole('spinbutton', { name: /狹縫數量/ }).fill('6')
-  await expect(setup.getByText('λ = 532 nm')).toBeVisible()
+  await expect(setup.getByText('λ = 532.0 nm')).toBeVisible()
   await expect(setup.getByText('z = 2.5 m（孔徑至屏幕）')).toBeVisible()
-  await expect(setup.getByText('a = 30 μm · N = 6')).toBeVisible()
-  await expect(setup.getByText('d = 160 μm')).toBeVisible()
+  await expect(setup.getByText('a = 30.00 μm · N = 6')).toBeVisible()
+  await expect(setup.getByText('d = 160.00 μm')).toBeVisible()
   await page.getByRole('button', { name: '單狹縫' }).click()
-  await expect(setup.getByText('a = 40 μm · N = 1')).toBeVisible()
-  await expect(setup.getByText('d = 160 μm')).toHaveCount(0)
+  await expect(setup.getByText('a = 40.00 μm · N = 1')).toBeVisible()
+  await expect(setup.getByText('d = 160.00 μm')).toHaveCount(0)
 })
 
 test('新孔徑可調整、顯示物理刻度並可成為猜題的正確答案', async ({ page }) => {
@@ -59,7 +59,7 @@ test('手動拖曳同步光路與圖樣，共同座標、色階及物理強度�
   await page.getByRole('button', { name: '近遠場比較' }).click()
   const panel = page.getByRole('region', { name: '近遠場比較', exact: true })
   await expect(panel.getByText(/各圖自身峰值模式把每張圖的可見最大強度設為 1/)).toBeVisible()
-  await expect(panel.getByText(/目前距離下的遠場理論對照/)).toBeVisible()
+  await expect(panel.getByText(/同一傳播距離下的 Fraunhofer 理論近似/)).toBeVisible()
   await expect(panel.getByRole('button', { name: /播放|暫停/ })).toHaveCount(0)
   const near = panel.getByRole('img', { name: 'Fresnel 近場強度圖' })
   const far = panel.getByRole('img', { name: 'Fraunhofer 遠場近似強度圖' })
@@ -155,10 +155,10 @@ test('比較頁孔徑、波長、物理原理與觀察內容都跟隨實驗參�
   await expect(opening).toHaveAttribute('data-angle', '30')
   await expect(opening).not.toHaveAttribute('d', rectangle)
   await panel.getByRole('spinbutton', { name: '波長' }).fill('500')
-  await expect(optical.getByText(/λ = 500 nm/)).toBeVisible()
+  await expect(optical.getByText(/λ = 500.0 nm/)).toBeVisible()
   await expect(distance).toHaveAttribute('data-current-distance', initialDistance)
   const observation = panel.getByRole('region', { name: '目前觀察' })
-  await expect(observation.getByText(/半徑 R 為 .*波長 λ 為 500 nm/)).toBeVisible()
+  await expect(observation.getByText(/半徑 R 為 .*波長 λ 為 500.0 nm/)).toBeVisible()
   await expect(observation.getByText(/長方孔遠場沿長、短邊對應軸/)).toBeVisible()
 
   await panel.getByRole('spinbutton', { name: '傳播距離', exact: true }).fill('500')
@@ -176,7 +176,89 @@ test('比較頁孔徑、波長、物理原理與觀察內容都跟隨實驗參�
   await expect(fresnel).toBeVisible()
   expect(await fresnel.evaluate((formula) => formula.namespaceURI)).toBe('http://www.w3.org/1998/Math/MathML')
   await expect(fresnel.locator('mfrac')).toHaveCount(2)
-  await expect(panel.getByText(/此刻 λ = 500 nm、z = 500 mm/)).toBeVisible()
+  await expect(panel.getByText(/此刻 λ = 500.0 nm、z = 500 mm/)).toBeVisible()
   await expect(panel.getByText(/0.1 可作為教學參考/)).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1)
+})
+
+test('三組教學預設套用已驗證的圖樣與可編輯參數', async ({ page }) => {
+  await page.goto('./#/farfield')
+  await page.getByRole('button', { name: '近遠場比較' }).click()
+  const panel = page.getByRole('region', { name: '近遠場比較', exact: true })
+  const guide = panel.getByRole('region', { name: '教學預設實驗' })
+  const controls = panel.getByRole('region', { name: '近遠場控制' })
+  const near = panel.getByRole('img', { name: 'Fresnel 近場強度圖' })
+  const far = panel.getByRole('img', { name: 'Fraunhofer 遠場近似強度圖' })
+
+  for (const [title, shape, wavelength, distance, formula, view] of [
+    ['圓孔——從近場到遠場', 'circle', '632.8', '71.11', 'r₁ ≈ 1.22λz／D', '±0.39 mm'],
+    ['方孔——十字形繞射', 'square', '532.0', '5000', 'sinc²', '±17.73 mm'],
+    ['三角形——六方向亮紋', 'triangle', '632.8', '1200', 'I(fₓ, fᵧ) = I(−fₓ, −fᵧ)', '±5.062 mm'],
+  ]) {
+    const preset = guide.getByRole('button', { name: new RegExp(title) })
+    await preset.click()
+    await expect(preset).toHaveAttribute('aria-pressed', 'true')
+    await expect(guide.getByText('實驗目標')).toBeVisible()
+    await expect(guide.getByText('操作方式')).toBeVisible()
+    await expect(guide.getByText('觀察重點')).toBeVisible()
+    await expect(guide.getByText(formula, { exact: false })).toBeVisible()
+    await expect(controls.getByRole('combobox', { name: '共同孔徑' })).toHaveValue(shape)
+    await expect(controls.getByRole('combobox', { name: '屏幕視野' })).toHaveValue('auto')
+    await expect(controls.getByRole('spinbutton', { name: '孔徑尺寸' })).toHaveValue('600.00')
+    await expect(controls.getByRole('spinbutton', { name: '旋轉角度' })).toHaveValue('0.0')
+    await expect(controls.getByRole('spinbutton', { name: '波長' })).toHaveValue(wavelength)
+    await expect(controls.getByRole('spinbutton', { name: '傳播距離', exact: true })).toHaveValue(distance)
+    await expect(panel.getByText('共同視野 ' + view, { exact: true })).toHaveCount(2)
+    await expect(near).toBeVisible()
+    await expect(far).toHaveAttribute('data-screen-half-width', (await near.getAttribute('data-screen-half-width'))!)
+  }
+  await controls.getByRole('spinbutton', { name: '旋轉角度' }).fill('30')
+  await expect(panel.locator('[data-aperture-outline]')).toHaveAttribute('data-angle', '30')
+  await guide.getByRole('button', { name: /三角形——六方向亮紋/ }).click()
+  await expect(controls.getByRole('spinbutton', { name: '旋轉角度' })).toHaveValue('0.0')
+})
+
+test('顯示精度與固定視野不會改變送入 Worker 的原始數值', async ({ page }) => {
+  type Captured = { aperture: { size: number; angle: number }; light: { wavelength: number; distance: number } }
+  await page.addInitScript(() => {
+    const postMessage = Worker.prototype.postMessage
+    Worker.prototype.postMessage = function (message, options) {
+      if (message?.aperture && message?.light) {
+        (window as Window & { lastComparison?: Captured }).lastComparison = message
+      }
+      Reflect.apply(postMessage, this, options === undefined ? [message] : [message, options])
+    }
+  })
+  await page.goto('./#/farfield')
+  await page.getByRole('button', { name: '近遠場比較' }).click()
+  const panel = page.getByRole('region', { name: '近遠場比較', exact: true })
+  await panel.getByRole('button', { name: /三角形——六方向亮紋/ }).click()
+  const near = panel.getByRole('img', { name: 'Fresnel 近場強度圖' })
+  const far = panel.getByRole('img', { name: 'Fraunhofer 遠場近似強度圖' })
+  await expect(near).toBeVisible()
+  const view = (await near.getAttribute('data-screen-half-width'))!
+  await panel.getByRole('combobox', { name: '屏幕視野' }).selectOption('fixed')
+  const wavelength = panel.getByRole('spinbutton', { name: '波長' })
+  const size = panel.getByRole('spinbutton', { name: '孔徑尺寸' })
+  const angle = panel.getByRole('spinbutton', { name: '旋轉角度' })
+  const distance = panel.getByRole('spinbutton', { name: '傳播距離', exact: true })
+  await wavelength.fill('626.355572695719')
+  await size.fill('454.76762872019')
+  await angle.fill('24.1010477598509')
+  await distance.fill('1234.567891')
+  await distance.blur()
+  await expect(wavelength).toHaveValue('626.4')
+  await expect(size).toHaveValue('454.77')
+  await expect(angle).toHaveValue('24.1')
+  await expect(distance).toHaveValue('1235')
+  const optical = panel.getByRole('region', { name: '光學實驗架構' })
+  await expect(optical.getByText(/λ = 626.4 nm/)).toBeVisible()
+  await expect(optical.getByText(/454.77 μm · 24.1°/)).toBeVisible()
+  await expect(near).toHaveAttribute('data-screen-half-width', view)
+  await expect(far).toHaveAttribute('data-screen-half-width', view)
+  const input = await page.evaluate(() => (window as Window & { lastComparison?: Captured }).lastComparison)
+  expect(input?.aperture.size).toBeCloseTo(454.76762872019e-6, 15)
+  expect(input?.aperture.angle).toBe(24.1010477598509)
+  expect(input?.light.wavelength).toBeCloseTo(626.355572695719e-9, 18)
+  expect(input?.light.distance).toBeCloseTo(1.234567891, 12)
 })

@@ -1,7 +1,8 @@
 import { lazy, Suspense, useState } from 'react'
 import { Aperture as ApertureIcon, CircleHelp, Focus, GitCompareArrows, Info, Lock, Unlock } from 'lucide-react'
 import { apertureKey, samplingCheck } from './apertures'
-import { AperturePlot, FarFieldPlot, formatMm } from './FarFieldCanvas'
+import { formatAngle, formatFresnel, formatMm, formatSize } from '../format'
+import { AperturePlot, FarFieldPlot } from './FarFieldCanvas'
 import { defaultSettings, FarFieldControls, ScaleSelector, ShapeSelector, toAperture, toLight } from './FarFieldControls'
 import { FarFieldQuiz } from './FarFieldQuiz'
 import { screenLimits, type IntensityScale } from './intensity'
@@ -48,9 +49,9 @@ export default function FarFieldPage() {
           <section className="visual-card ff-aperture ff-figure" aria-labelledby="ff-aperture-title">
             <div className="ff-figure-heading">
               <div><h2 id="ff-aperture-title"><ApertureIcon size={19} aria-hidden="true" /> 孔徑形狀</h2>
-                <p>{lesson.title} · {lesson.size} {settings.sizeUm} μm</p>
+                <p>{lesson.title} · {lesson.size} {formatSize(settings.sizeUm)} μm</p>
               </div>
-              <span className="ff-angle">{settings.angle}°</span>
+              <span className="ff-angle">{formatAngle(settings.angle)}°</span>
             </div>
             <AperturePlot aperture={aperture} label={lesson.title + '的二值透光孔徑'} showScale />
             <div className="ff-aperture-legend">
@@ -85,7 +86,7 @@ export default function FarFieldPage() {
               <Info size={17} aria-hidden="true" />
               <div>
                 <p><strong>{fresnel > 0.1 ? '遠場近似誤差可能偏大' : '遠場條件良好'}</strong>
-                  <span className="mono"> N₍F₎ = {fresnel.toPrecision(3)}</span></p>
+                  <span className="mono"> N<sub>F</sub> = {formatFresnel(fresnel)}</span></p>
                 {fresnel > 0.1 && <p>圖像為 Fraunhofer 模型的預測。增大屏幕距離或縮小孔徑可改善遠場條件。</p>}
                 {!samplingAdequate && <p>孔徑特徵取樣不足，請加大雙圓孔間距或使用較大的特徵尺寸。</p>}
                 {clipped && <p>可用屏幕範圍縮至 ±{formatMm(halfWidth)} mm，以符合近軸與取樣範圍。</p>}
@@ -100,8 +101,8 @@ export default function FarFieldPage() {
             </dl>
             <details className="ff-model">
               <summary>取樣與屏幕座標</summary>
-              <p>輸入為 0 或 1 的透射遮罩，孔徑取樣間距為 {(samplingCheck(aperture).step * 1e6).toPrecision(3)} μm。FFT 移頻後以 x = λzfₓ、y = λzfᵧ 對應屏幕，中央強度歸一化為 1。</p>
-              <p>以孔徑中心到最遠透光點的距離 R 計算 N₍F₎ = R²／(λz)。大於 0.1 時顯示遠場提示。屏幕顯示限制為 r／z ≤ 0.1。</p>
+              <p>輸入為 0 或 1 的透射遮罩，孔徑取樣間距為 {formatSize(samplingCheck(aperture).step * 1e6)} μm。FFT 移頻後以 x = λzfₓ、y = λzfᵧ 對應屏幕，中央強度歸一化為 1。</p>
+              <p>以孔徑中心到最遠透光點的距離 R 計算 N₍F₎ = R²／(λz)。0.1 為教學參考。屏幕顯示限制為 r／z ≤ 0.1。</p>
             </details>
           </section>
         </div>

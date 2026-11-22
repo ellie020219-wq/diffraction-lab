@@ -55,7 +55,7 @@ test('能操作三種模式，數值、曲線和亮紋會跟著變動', async ({
 test('光柵預設涵蓋三個正級次，第四級不存在，頁面在視窗內排版', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'N 縫光柵' }).click()
-  await page.getByRole('button', { name: /套用 532 nm/ }).click()
+  await page.getByRole('button', { name: /套用 532.0 nm/ }).click()
   await expect(page.getByText(/第 ±4 級不存在/)).toBeVisible()
   const table = page.getByRole('table', { name: '理論干涉級次' })
   for (const [order, angle] of [['+1', '18.615°'], ['+2', '39.673°'], ['+3', '73.256°']]) {
@@ -101,8 +101,8 @@ test('狹縫示意圖跟隨三種模式、保留寬距比例並放大極窄狹�
   expect(diagramHeading!.y).toBeLessThan(chartHeading!.y)
   await expect(openings).toHaveCount(2)
   await expect(diagram.getByText('N = 2')).toBeVisible()
-  await expect(widthMarker).toHaveText('a = 40 μm')
-  await expect(pitchMarker).toHaveText('d = 160 μm')
+  await expect(widthMarker).toHaveText('a = 40.00 μm')
+  await expect(pitchMarker).toHaveText('d = 160.00 μm')
 
   await page.getByRole('button', { name: '單狹縫' }).click()
   await expect(openings).toHaveCount(1)
@@ -110,7 +110,7 @@ test('狹縫示意圖跟隨三種模式、保留寬距比例並放大極窄狹�
   await expect(pitchMarker).toHaveCount(0)
   const initialWidth = (await openings.first().boundingBox())!.width
   await page.getByRole('spinbutton', { name: /狹縫寬度/ }).fill('80')
-  await expect(widthMarker).toHaveText('a = 80 μm')
+  await expect(widthMarker).toHaveText('a = 80.00 μm')
   expect((await openings.first().boundingBox())!.width).toBeCloseTo(2 * initialWidth, 1)
 
   await page.getByRole('button', { name: 'N 縫光柵' }).click()
@@ -119,8 +119,8 @@ test('狹縫示意圖跟隨三種模式、保留寬距比例並放大極窄狹�
   await page.getByRole('spinbutton', { name: /狹縫數量/ }).fill('7')
   await expect(openings).toHaveCount(7)
   await expect(diagram.getByText('N = 7')).toBeVisible()
-  await expect(widthMarker).toHaveText('a = 20 μm')
-  await expect(pitchMarker).toHaveText('d = 100 μm')
+  await expect(widthMarker).toHaveText('a = 20.00 μm')
+  await expect(pitchMarker).toHaveText('d = 100.00 μm')
 
   const shape = await openings.evaluateAll((slits) => slits.map((slit) => {
     const element = slit as HTMLElement
@@ -141,8 +141,8 @@ test('狹縫示意圖跟隨三種模式、保留寬距比例並放大極窄狹�
   await page.getByRole('slider', { name: '狹縫間距滑桿' }).press('End')
   await page.getByRole('slider', { name: '狹縫數量滑桿' }).press('End')
   await expect(openings).toHaveCount(24)
-  await expect(widthMarker).toHaveText('a = 0.2 μm')
-  await expect(pitchMarker).toHaveText('d = 400 μm')
+  await expect(widthMarker).toHaveText('a = 0.20 μm')
+  await expect(pitchMarker).toHaveText('d = 400.00 μm')
   const magnified = diagram.locator('.slit-detail')
   await expect(magnified.getByText('單縫局部放大')).toBeVisible()
   expect((await magnified.locator('.slit-opening').boundingBox())!.width).toBeGreaterThan(16)

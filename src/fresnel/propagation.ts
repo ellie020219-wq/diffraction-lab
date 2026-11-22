@@ -29,10 +29,11 @@ export function distancePosition(distance: number, min: number, max: number) {
   return 100 * Math.log(distance / min) / Math.log(max / min)
 }
 
-export function comparisonWindow(aperture: Aperture, light: Illumination, fixed: boolean) {
+export function comparisonWindow(aperture: Aperture, light: Illumination, fixed: boolean | number) {
   const radius = apertureRadius(aperture)
   const product = light.wavelength * light.distance
-  const desired = fixed ? 2 * radius : Math.max(1.3 * radius, 4 * product / aperture.size)
+  const desired = typeof fixed === 'number' ? fixed
+    : fixed ? 2 * radius : Math.max(1.3 * radius, 4 * product / aperture.size)
   const far = screenLimits(aperture, light, desired).halfWidth
   const step = 2.4 * radius / previewGrid.samples
   // Bound the phase change of the full Fresnel integrand, including the
@@ -43,6 +44,9 @@ export function comparisonWindow(aperture: Aperture, light: Illumination, fixed:
   return {
     halfWidth,
     limited: halfWidth < desired * 0.999,
+    limitReason: halfWidth === sampling ? '孔徑相位取樣'
+      : halfWidth === paraxial ? 'Fresnel 傍軸相位誤差'
+      : '遠場 FFT 頻帶或傍軸角度',
     adequate: samplingCheck(aperture).adequate && Number.isFinite(halfWidth) && halfWidth > 0,
   }
 }

@@ -1,3 +1,4 @@
+import { formatMm, formatSize } from '../format'
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { apertureRadius, apertureSampler, type Aperture } from './apertures'
 import type { Spectrum } from './fft2'
@@ -48,7 +49,7 @@ export function AperturePlot({ aperture, label, showScale }: AperturePlotProps) 
   if (!showScale) return plot
   const half = apertureRadius(aperture) * 1.21
   const unit = half < 1e-3 ? 'μm' : 'mm'
-  const tick = Number((half * (unit === 'μm' ? 1e6 : 1e3)).toPrecision(4))
+  const tick = unit === 'μm' ? formatSize(half * 1e6) : formatMm(half)
   return <div className="ff-aperture-scale" role="group" aria-label={`孔徑 x、y 視野均為 ±${tick} ${unit}`}>
     <div className="ff-aperture-y" aria-hidden="true"><span>+{tick}</span><span>0</span><span>−{tick}</span></div>
     {plot}
@@ -110,10 +111,6 @@ export function FieldImage({ spectrum, size, light, halfWidth, scale, label, com
   return <canvas ref={ref} width={pixels} height={pixels} role="img" aria-label={label}
     data-fft={spectrum.fftSide} data-screen-half-width={halfWidth}
     onPointerMove={onProbe ? probe : undefined} onPointerLeave={onProbe ? () => onProbe(null) : undefined} />
-}
-
-export function formatMm(meters: number) {
-  return new Intl.NumberFormat('zh-TW', { maximumSignificantDigits: 4, useGrouping: false }).format(1000 * meters)
 }
 
 interface FarFieldPlotProps {

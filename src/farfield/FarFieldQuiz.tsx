@@ -3,7 +3,8 @@ import { Check, CircleHelp, RotateCcw, X } from 'lucide-react'
 import { shapes, type Aperture, type Shape } from './apertures'
 import type { FarFieldEngine } from './engine'
 import type { Spectrum } from './fft2'
-import { AperturePlot, FieldImage, formatMm } from './FarFieldCanvas'
+import { formatMm } from '../format'
+import { AperturePlot, FieldImage } from './FarFieldCanvas'
 import { lessons } from './shapeLessons'
 
 const light = { wavelength: 632.8e-9, distance: 18 }

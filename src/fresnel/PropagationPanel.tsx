@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
-import { apertureKey, limits, shapes, spacingRatio, type Shape } from '../farfield/apertures'
-import { formatMm } from '../farfield/FarFieldCanvas'
+import { apertureKey, apertureRadius, limits, shapes, spacingRatio, type Shape } from '../farfield/apertures'
+import { formatAngle, formatFresnel, formatMm, formatSize } from '../format'
 import { Parameter, ScaleSelector, toAperture, withApertureSize, type Settings } from '../farfield/FarFieldControls'
 import type { IntensityScale } from '../farfield/intensity'
 import { lessons } from '../farfield/shapeLessons'
@@ -12,6 +12,8 @@ import { comparisonWindow, distanceAt, distanceBounds, distancePosition, fresnel
 import { PropagationObservation } from './PropagationObservation'
 import { PropagationPlot } from './PropagationPlot'
 import { PropagationPrinciples } from './PropagationPrinciples'
+import { TeachingExperiments } from './TeachingExperiments'
+import type { TeachingPreset } from './teachingPresets'
 import { useFresnel } from './useFresnel'
 
 export default function PropagationPanel({ settings, changeSettings }: {
@@ -25,13 +27,14 @@ export default function PropagationPanel({ settings, changeSettings }: {
   const [requestedDistance, setRequestedDistance] = useState(bounds.initial)
   const [draftDistance, setDraftDistance] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
-  const [fixed, setFixed] = useState(true)
+  const [fixedHalfWidth, setFixedHalfWidth] = useState<number | null>(() => 2 * apertureRadius(aperture))
+  const [activePreset, setActivePreset] = useState<TeachingPreset | null>(null)
   const [scale, setScale] = useState<IntensityScale>('log')
   const [normalization, setNormalization] = useState<Normalization>('individual')
   const distance = Math.min(bounds.max, Math.max(bounds.min, requestedDistance))
   const progress = Math.min(100, Math.max(0, distancePosition(distance, bounds.min, bounds.max)))
   const light = useMemo(() => ({ wavelength, distance }), [wavelength, distance])
-  const { halfWidth, adequate, limited } = comparisonWindow(aperture, light, fixed)
+  const { halfWidth, adequate, limited, limitReason } = comparisonWindow(aperture, light, fixedHalfWidth ?? false)
   const number = fresnelNumber(aperture, light)
   const fieldKey = [apertureKey(aperture), aperture.size, wavelength, distance, halfWidth].join(':')
   const input = useMemo<FrameInput>(() => ({ aperture, light, halfWidth, preview: dragging }), [aperture, light, halfWidth, dragging])
@@ -46,8 +49,10 @@ export default function PropagationPanel({ settings, changeSettings }: {
     || Number(draftDistance) < minimumMm || Number(draftDistance) > maximumMm)
   const factors = comparisonFactors(field?.peaks, normalization)
   const lesson = lessons[shape]
-  const apertureLabel = `${lesson.title} · ${lesson.size} ${sizeUm} μm · ${angle}°`
-    + (shape === 'double-circle' ? ` · 中心距 ${spacingUm} μm` : '')
+  const apertureLabel = `${lesson.title} · ${lesson.size} ${formatSize(sizeUm)} μm · ${formatAngle(angle)}°`
+    + (shape === 'double-circle' ? ` · 中心距 ${formatSize(spacingUm)} μm` : '')
+  const diffractionScale = wavelength * distance / aperture.size
+  const narrowView = adequate && fixedHalfWidth !== null && halfWidth < diffractionScale * 1.5
 
   useEffect(() => {
     if (!dragging) return
@@ -63,6 +68,7 @@ export default function PropagationPanel({ settings, changeSettings }: {
   }, [dragging])
 
   function changeOptics(next: Settings) {
+    if (activePreset && next.shape !== activePreset.shape) setActivePreset(null)
     setRequestedDistance(distance)
     setDraftDistance(null)
     changeSettings(next)
@@ -73,23 +79,35 @@ export default function PropagationPanel({ settings, changeSettings }: {
     setDraftDistance(null)
   }
 
+  function applyPreset(preset: TeachingPreset) {
+    setActivePreset(preset)
+    changeSettings({ ...withApertureSize(settings, preset.sizeUm), shape: preset.shape,
+      angle: preset.angle, wavelengthNm: preset.wavelengthNm })
+    updateDistance(preset.distanceM)
+    setFixedHalfWidth(null)
+    setScale('log')
+    setNormalization('individual')
+  }
+
   return <section className="propagation-panel" aria-label="近遠場比較">
-    <OpticalPath aperture={aperture} sizeUm={sizeUm} wavelengthNm={wavelengthNm} distance={distance} position={progress} />
+    <OpticalPath aperture={aperture} sizeUm={sizeUm} wavelengthNm={wavelengthNm} distance={distance} position={progress} number={number} />
+    <TeachingExperiments active={activePreset} apply={applyPreset} />
 
     <section className="control-card propagation-controls" aria-label="近遠場控制">
       <div className="propagation-heading">
         <h2>實驗參數</h2>
         <div className="propagation-readout">
           <span>傳播距離 z <output data-current-distance={distance}>{formatMm(distance)} mm</output></span>
-          <span>Fresnel 數 N<sub>F</sub> <output>{number.toPrecision(4)}</output></span>
+          <span>Fresnel 數 N<sub>F</sub> <output>{formatFresnel(number)}</output></span>
         </div>
       </div>
       <div className="propagation-settings">
         <label>共同孔徑 <select value={shape} onChange={(event) => changeOptics({ ...settings, shape: event.target.value as Shape })}>
           {shapes.map((id) => <option key={id} value={id}>{lessons[id].title}</option>)}
         </select></label>
-        <label>屏幕視野 <select value={fixed ? 'fixed' : 'auto'} onChange={(event) => setFixed(event.target.value === 'fixed')}>
-          <option value="fixed">固定視野</option>
+        <label>屏幕視野 <select value={fixedHalfWidth !== null ? 'fixed' : 'auto'}
+          onChange={(event) => setFixedHalfWidth(event.target.value === 'fixed' ? halfWidth : null)}>
+          <option value="fixed">固定視野{fixedHalfWidth !== null && ` ±${formatMm(fixedHalfWidth)} mm`}</option>
           <option value="auto">自動取景</option>
         </select></label>
         <label>強度歸一化 <select value={normalization} onChange={(event) => setNormalization(event.target.value as Normalization)}>
@@ -120,7 +138,7 @@ export default function PropagationPanel({ settings, changeSettings }: {
           onChange={(event) => updateDistance(distanceAt(event.currentTarget.valueAsNumber, bounds.min, bounds.max))} />
         <label className="propagation-distance">
           <input aria-label="傳播距離" inputMode="decimal" type="number" step="any" min={minimumMm} max={maximumMm}
-            value={draftDistance ?? Number((distance * 1000).toPrecision(8))}
+            value={draftDistance ?? formatMm(distance)}
             aria-invalid={invalidInput} aria-describedby="propagation-range"
             onChange={(event) => {
               const mm = event.currentTarget.valueAsNumber
@@ -144,9 +162,12 @@ export default function PropagationPanel({ settings, changeSettings }: {
       <div className="propagation-comparison-heading">
         <h2 id="propagation-result-title">繞射圖案比較</h2>
         <p>兩圖共用實際屏幕視野和色階。各圖自身峰值模式把每張圖的可見最大強度設為 1，便於比較圖樣。
-          共同基準模式以兩圖中較高的峰值為分母，保留兩模型預測的強度比例。</p>
+          共同基準以相同入射振幅計算，兩圖都除以其中較高的可見峰值，保留模型預測的強度比例。</p>
       </div>
       {failure && <p className="ff-input-error" role="alert">{failure}</p>}
+      {!adequate && !failure && <p className="propagation-view-warning">目前的孔徑取樣或有效視野不足。請調整孔徑尺寸、間距或傳播距離。</p>}
+      {adequate && limited && <p className="propagation-view-warning">受{limitReason}限制，本次只比較 ±{formatMm(halfWidth)} mm 的有效區域。</p>}
+      {narrowView && <p className="propagation-view-warning">固定視野只涵蓋中央附近。遠場代表尺度 λz／D 約 {formatMm(diffractionScale)} mm，切換「自動取景」可查看外側暗紋與旁瓣。</p>}
       <div className="propagation-grid" aria-busy={adequate && !field && !failure}>
         <PropagationPlot title="Fresnel 近場" field={field?.near} side={field?.side ?? 0} halfWidth={field?.halfWidth ?? halfWidth}
           scale={scale} distance={distance} status={status} apertureLimit={limited} normalization={normalization}
@@ -154,7 +175,8 @@ export default function PropagationPanel({ settings, changeSettings }: {
         <PropagationPlot title="Fraunhofer 遠場近似" field={field?.far} side={field?.side ?? 0} halfWidth={field?.halfWidth ?? halfWidth}
           scale={scale} distance={distance} status={status} apertureLimit={limited} normalization={normalization}
           intensityFactor={factors.far} apertureLabel={apertureLabel} wavelength={wavelengthNm}
-          warning={number > 0.1 ? '目前距離下的遠場理論對照，近似誤差可能偏大。' : undefined} />
+          warning={'同一傳播距離下的 Fraunhofer 理論近似'
+            + (number > 0.1 ? '。此條件下近似誤差可能偏大。' : '。')} />
       </div>
     </section>
 

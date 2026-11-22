@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { Circle, CircleEllipsis, Hexagon, Minus, MoveHorizontal, Pill, Plus, RotateCcw, SlidersHorizontal, Square, Triangle } from 'lucide-react'
+import { formatParameter, formatWavelength } from '../format'
 import { limits, shapes, spacingRatio, type Aperture, type Shape } from './apertures'
 import type { Illumination, IntensityScale } from './intensity'
 import { lessons } from './shapeLessons'
@@ -57,7 +58,7 @@ export function Parameter({ label, unit, min, max, value, change }: ParameterPro
   const [draft, setDraft] = useState<string | null>(null)
   const input = draft === null ? value : Number(draft)
   const valid = draft !== '' && Number.isFinite(input) && input >= min && input <= max
-  const numberLabel = (number: number) => Number(number.toFixed(6))
+  const numberLabel = (number: number) => formatParameter(number, unit)
   function commit() {
     if (valid) setDraft(null)
   }
@@ -81,7 +82,7 @@ export function Parameter({ label, unit, min, max, value, change }: ParameterPro
         <span>{unit}</span>
       </div>
     </div>
-    <input className="slider" aria-label={label + '滑桿'} type="range" min={min} max={max} step="any"
+    <input className="slider" aria-label={label + '滑桿'} aria-valuetext={numberLabel(value) + ' ' + unit} type="range" min={min} max={max} step="any"
       value={value} style={{ '--fill': `${100 * (value - min) / (max - min)}%` } as React.CSSProperties}
       onChange={(event) => { setDraft(null); change(event.currentTarget.valueAsNumber) }} />
     {!valid && <p className="ff-input-error" id={id + '-error'}>請輸入 {numberLabel(min)} 至 {numberLabel(max)} {unit}。</p>}
@@ -114,7 +115,7 @@ export function FarFieldControls({ settings, change, reset }: ControlsProps) {
           label="波長" unit="nm" {...limits.wavelength} value={wavelengthNm} change={(value) => change({ ...settings, wavelengthNm: value })} />
         <div className="ff-wavelengths" role="group" aria-label="快速選擇波長">
           {[405, 532, 632.8].map((nm) => <button key={nm} type="button" aria-pressed={nm === wavelengthNm}
-            onClick={() => { setQuickId(quickId + 1); change({ ...settings, wavelengthNm: nm }) }}>{nm} nm</button>)}
+            onClick={() => { setQuickId(quickId + 1); change({ ...settings, wavelengthNm: nm }) }}>{formatWavelength(nm)} nm</button>)}
         </div>
       </div>
       <Parameter label="屏幕距離" unit="mm" {...limits.distance} value={distanceMm} change={(value) => change({ ...settings, distanceMm: value })} />

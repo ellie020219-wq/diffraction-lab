@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { FlaskConical, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { formatFresnel, formatParameter } from './format'
 import { type Mode, type Settings } from './settings'
 
 interface NumberControlProps {
@@ -12,22 +13,22 @@ interface NumberControlProps {
   step: number
   onChange: (value: number) => void
   hint?: string
-  displayValue?: string
   spectral?: boolean
 }
 
 function NumberControl({
-  label, symbol, unit, value, min, max, step, onChange, hint, displayValue, spectral,
+  label, symbol, unit, value, min, max, step, onChange, hint, spectral,
 }: NumberControlProps) {
   const id = useId()
   const [draft, setDraft] = useState<string | null>(null)
-  const shown = displayValue ?? String(value)
+  const shown = formatParameter(value, unit)
   const withinBounds = (number: number) => number >= min && number <= max
 
   function commit() {
     if (draft !== null && draft.trim() !== '' && Number.isFinite(Number(draft))) {
       const number = Math.min(max, Math.max(min, Number(draft)))
-      if (number !== Number(shown)) onChange(step === 1 ? Math.round(number) : number)
+      const committed = step === 1 ? Math.round(number) : number
+      if (committed !== value) onChange(committed)
     }
     setDraft(null)
   }
@@ -104,7 +105,7 @@ export function Controls({ mode, settings, onChange, onReset, onGratingExample, 
         min={0.2} max={mode === 'single' ? 160 : Math.min(160, pitchUm)} step={0.1}
         onChange={(value) => onChange({ ...settings, widthUm: value })} />
       {mode !== 'single' && <NumberControl label="狹縫間距" symbol="d" unit="μm" value={pitchUm}
-        min={0.4} max={400} step={0.1} displayValue={density === null ? undefined : pitchUm.toFixed(6)}
+        min={0.4} max={400} step={0.1}
         hint={density === null ? '相鄰狹縫的中心距離' : `${density} lines/mm · 相鄰狹縫的中心距離`}
         onChange={(value) => onChange({ ...settings, pitchUm: value, density: null, widthUm: Math.min(widthUm, value) })} />}
       <NumberControl label="屏幕距離" symbol="L" unit="m" value={distanceM}
@@ -115,12 +116,12 @@ export function Controls({ mode, settings, onChange, onReset, onGratingExample, 
       {mode === 'grating' && (
         <button className="example-button" type="button" onClick={onGratingExample}>
           <FlaskConical size={16} aria-hidden="true" />
-          <span>套用 532 nm／600 lines/mm</span>
+          <span>套用 532.0 nm／600 lines/mm</span>
         </button>
       )}
       <div className={farRatio > 0.1 ? 'condition condition-warning' : 'condition'} aria-live="polite">
         <div><span className="state-dot" />{farRatio > 0.1 ? '遠場近似誤差可能偏大' : '遠場條件良好'}</div>
-        <span>D²／(λL) = {farRatio < 0.001 ? farRatio.toExponential(2) : farRatio.toFixed(3)}</span>
+        <span>D²／(λL) = {formatFresnel(farRatio)}</span>
       </div>
     </aside>
   )

@@ -1,3 +1,4 @@
+import { formatWavelength } from './format'
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { Crosshair, Expand, ScanLine } from 'lucide-react'
 import { intensityAt, sinFromPosition, type Optics, type PatternPoint, type TheoreticalPoint } from './optics'
@@ -278,7 +279,7 @@ export function PatternChart({
       <div className="screen-section">
         <div className="screen-heading">
           <h3><ScanLine size={16} aria-hidden="true" /> 屏幕亮紋</h3>
-          <span className="screen-meta">λ = {wavelengthNm} nm <span className="screen-dot">·</span> 亮度 ∝ I<sup>0.55</sup></span>
+          <span className="screen-meta">λ = {formatWavelength(wavelengthNm)} nm <span className="screen-dot">·</span> 亮度 ∝ I<sup>0.55</sup></span>
         </div>
         <div className="screen-image">
           <canvas ref={screen} className="screen-canvas" role="img" aria-label="依照波長上色的屏幕亮紋"

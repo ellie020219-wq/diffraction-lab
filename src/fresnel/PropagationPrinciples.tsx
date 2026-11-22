@@ -1,6 +1,6 @@
 import { BookOpen } from 'lucide-react'
 import { apertureRadius, type Aperture } from '../farfield/apertures'
-import { formatMm } from '../farfield/FarFieldCanvas'
+import { formatAngle, formatFresnel, formatMm, formatWavelength } from '../format'
 import type { Illumination } from '../farfield/intensity'
 
 export function PropagationPrinciples({ aperture, light, number }: {
@@ -8,11 +8,20 @@ export function PropagationPrinciples({ aperture, light, number }: {
   light: Illumination
   number: number
 }) {
-  const wavelength = Number((1e9 * light.wavelength).toPrecision(6))
+  const wavelength = formatWavelength(light.wavelength * 1e9)
   const distance = formatMm(light.distance)
   return <details className="control-card propagation-principles">
     <summary><BookOpen size={19} aria-hidden="true" /> 物理原理</summary>
     <div className="propagation-theory">
+      <section>
+        <h3>參數如何影響繞射</h3>
+        <ul className="propagation-effects">
+          <li><strong>波長 λ</strong>　其他條件固定時，較長波長使遠場圖樣在屏幕上展寬。</li>
+          <li><strong>距離 z</strong>　遠場圖樣的尺寸隨距離增加。近場的亮暗可能反覆變化。</li>
+          <li><strong>孔徑尺寸</strong>　等比放大孔徑會縮小遠場繞射的角度尺度。</li>
+          <li><strong>旋轉</strong>　遠場圖樣會轉過相同角度。目前孔徑旋轉 {formatAngle(aperture.angle)}°。</li>
+        </ul>
+      </section>
       <section>
         <h3>惠更斯－菲涅耳原理 <span>Huygens–Fresnel principle</span></h3>
         <p>孔徑上每一個透光點都對屏幕上的場有貢獻。將這些帶有振幅與相位的次波相加，有些位置的波會增強，有些會互相抵消。圖上的波前用來表示這種傳播。</p>
@@ -65,7 +74,7 @@ export function PropagationPrinciples({ aperture, light, number }: {
             <mfrac><msup><mi>R</mi><mn>2</mn></msup><mrow><mi>λ</mi><mi>z</mi></mrow></mfrac>
           </math>
         </div>
-        <p>R 是從孔徑中心到最遠透光點的距離，與 λ、z 一同以公尺計算。N<sub>F</sub> 無單位。此孔徑 R = {formatMm(apertureRadius(aperture))} mm，目前 N<sub>F</sub> = {number.toPrecision(4)}。</p>
+        <p>R 是從孔徑中心到最遠透光點的距離，與 λ、z 一同以公尺計算。N<sub>F</sub> 無單位。此孔徑 R = {formatMm(apertureRadius(aperture))} mm，目前 N<sub>F</sub> = {formatFresnel(number)}。</p>
         <p>N<sub>F</sub> 越小，孔徑二次相位越弱，遠場近似通常越好。0.1 可作為教學參考。實際可接受的誤差取決於孔徑形狀、觀察視野和精度要求。</p>
       </section>
     </div>

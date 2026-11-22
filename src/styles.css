@@ -985,3 +985,30 @@ nav .nav-farfield[aria-current="page"] { color: #f1f8ee; background: var(--green
   .propagation-manual .slider { flex: 1 1 130px; }
   .propagation-path-labels span { font-size: 12px; }
 }
+
+.propagation-path-explanation { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 9px; }
+.propagation-path-explanation p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.propagation-regime { background: var(--green-pale); color: var(--green-deep); border-radius: 6px; padding: 4px 8px; font-size: 13px; }
+.propagation-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.propagation-presets button {
+  display: flex; gap: 7px; align-items: center; justify-content: center;
+  border: 1px solid var(--border); background: #f4f8f4; border-radius: 7px; min-height: 40px;
+  padding: 6px 8px; color: var(--green-deep); font-size: 14px; font-weight: 650;
+}
+.propagation-presets button:hover { border-color: #6e9283; }
+.propagation-presets button[aria-pressed="true"] { background: #1b4539; border-color: #1b4539; color: #fff; }
+.propagation-presets button span { font: 700 13px var(--mono); min-width: 1.6em; }
+.propagation-preset-guide { border: 1px solid var(--border); border-radius: 8px; background: #f7faf6; margin-top: 10px; padding: 8px 10px; }
+.propagation-preset-guide dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; margin: 0; }
+.propagation-preset-guide dt { font-size: 13px; color: var(--green-deep); font-weight: 650; }
+.propagation-preset-guide dd, .propagation-preset-guide p { font-size: 13px; color: var(--muted); margin: 3px 0 0; line-height: 1.55; }
+.propagation-preset-guide p { font-weight: 600; color: var(--green-deep); }
+.propagation-view-warning {
+  background: #fbf4e5; border: 1px solid #eaddc0; color: #5b4a2b;
+  padding: 6px 9px; border-radius: 6px; font-size: 13px; margin: 0 0 8px;
+}
+.propagation-effects { margin: 0; padding-inline-start: 1.2em; color: var(--muted); font-size: 13px; line-height: 1.7; }
+@media (max-width: 650px) {
+  .propagation-presets, .propagation-preset-guide dl { grid-template-columns: minmax(0, 1fr); }
+  .propagation-presets button { justify-content: start; }
+}
